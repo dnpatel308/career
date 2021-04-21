@@ -1,0 +1,3 @@
+TestSuite;TestCase;Active;URLParameters;Body;StatusCode;AssertionMethod;AssertionArgs;TestLinkSettings
+CreateDevice API;Missing body;TRUE;;;400;;;
+CreateDevice API;Missing article no;TRUE;;{};400;assertEquals(java.lang.Object,java.lang.Object);Article number is mandatory@.message;

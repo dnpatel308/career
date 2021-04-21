@@ -1,0 +1,66 @@
+{{- if .Values.ingressTraefik.enabled -}}
+{{- $fullName := include "helm.fullname" . -}}
+{{- $svcPort := .Values.service.port -}}
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ .Values.ciEnvironmentSlug | default "noCiEnv" }}-{{ $fullName }}-http
+  labels:
+    app: {{ .Chart.Name }}
+    version: {{ .Values.image.tag }}
+    {{- include "helm.labels" . | nindent 4 }}
+  annotations:
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- range $key, $value := .Values.annotations }}
+    {{ $key }}: "{{ $value }}"
+    {{- end }}
+spec:
+  entryPoints:
+  - http
+  routes:
+  - kind: Rule
+    match: Host(`{{ .Values.ingressTraefik.host }}`)
+    {{ if .Values.ingressTraefik.middlewares }}
+    middlewares:
+      {{- range $index, $middleware := .Values.ingressTraefik.middlewares }}
+      - name: {{ $middleware }}
+      {{- end }}
+    {{- end }}
+    services:
+    - name: {{ .Values.ciEnvironmentSlug | default "noCiEnv" }}-{{ include "helm.fullname" . }}
+      port: {{ $svcPort }}
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ .Values.ciEnvironmentSlug | default "noCiEnv" }}-{{ $fullName }}-https
+  labels:
+    app: {{ .Chart.Name }}
+    version: {{ .Values.image.tag }}
+    {{- include "helm.labels" . | nindent 4 }}
+  annotations:
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- range $key, $value := .Values.annotations }}
+    {{ $key }}: "{{ $value }}"
+    {{- end }}
+spec:
+  entryPoints:
+  - https
+  routes:
+  - kind: Rule
+    match: Host(`{{ .Values.ingressTraefik.host }}`)
+    {{ if .Values.ingressTraefik.middlewares }}
+    middlewares:
+      {{- range $index, $middleware := .Values.ingressTraefik.middlewares }}
+      - name: {{ $middleware }}
+      {{- end }}
+    {{- end }}
+    services:
+    - name: {{ .Values.ciEnvironmentSlug | default "noCiEnv" }}-{{ include "helm.fullname" . }}
+      port: {{ $svcPort }}
+  tls: {}
+{{- end }}

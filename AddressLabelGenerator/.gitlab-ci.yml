@@ -1,0 +1,311 @@
+stages:
+  - build
+  - publishjars
+  - packaging
+  - test
+  - publish  
+  - deploy
+
+image: maven:3.3.9-jdk-8
+
+
+variables:
+  MAVEN_CLI_OPTS: "--batch-mode -s .m2/settings.xml"
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+  IMAGE_NAME: gitlab-registry.brodos.net/addresslabelgenerator/addresslabelgenerator:${CI_COMMIT_REF_NAME}-${CI_PIPELINE_ID}
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - .m2/repository/
+
+sonarqube_master_job:
+  stage: test
+  script:
+    - mvn sonar:sonar -Dsonar.host.url=$SONAR_URL -Dsonar.login=$SONAR_LOGIN -Dsonar.gitlab.project_id=$CI_PROJECT_PATH -Dsonar.gitlab.commit_sha=$CI_COMMIT_SHA -Dsonar.gitlab.ref_name=$CI_COMMIT_REF_NAME ${MAVEN_CLI_OPTS} -f ./pom.xml    
+
+build:
+  stage: build  
+  script:    
+    - mvn $MAVEN_CLI_OPTS clean install
+  artifacts:
+    paths:
+     - assembly/*
+     - core/*
+     - infrastructure/*
+     - service/target/*
+     - application/target/*
+     - dhl/*
+     - tof/*
+     - features/*
+
+staging_publishjars:
+  stage: publishjars
+  only:
+    - /^Branch_.[0-9]*.[0-9]$/
+    - master
+  script:
+    - export PROJECT_VERSION=`cat ./assembly/target/classes/project.properties | grep version | cut -d'=' -f2`    
+    - mvn $MAVEN_CLI_OPTS jar:jar deploy:deploy -DrepositoryId=artifactory-snapshot -f application/pom.xml
+    - mvn $MAVEN_CLI_OPTS jar:jar deploy:deploy -DrepositoryId=artifactory-snapshot -f core/pom.xml
+    - mvn $MAVEN_CLI_OPTS jar:jar deploy:deploy -DrepositoryId=artifactory-snapshot -f dhl/pom.xml
+    - mvn $MAVEN_CLI_OPTS jar:jar deploy:deploy -DrepositoryId=artifactory-snapshot -f infrastructure/pom.xml
+    - mvn $MAVEN_CLI_OPTS jar:jar deploy:deploy -DrepositoryId=artifactory-snapshot -f service/pom.xml
+    - mvn $MAVEN_CLI_OPTS jar:jar deploy:deploy -DrepositoryId=artifactory-snapshot -f tof/pom.xml
+#    - mvn $MAVEN_CLI_OPTS deploy:deploy-file -Dfile=features/target/feature/feature.xml -DrepositoryId=artifactory-snapshot -Durl=https://brodos.jfrog.io/brodos/libs-snapshots-local -DartifactId=AddressLabelGenerator-features -DgroupId=com.brodos.karaf.features -Dclassifier=features -Dversion="${PROJECT_VERSION}" -Dtype=xml
+  artifacts:
+    paths:
+     - assembly/*
+     - core/*
+     - infrastructure/*
+     - service/target/*
+     - application/*
+     - dhl/*
+     - tof/*
+     - features/*
+
+production_publishjars:
+  stage: publishjars
+  only:
+    - /^[0-9]*.[0-9]*.[0-9]+$/
+  script:
+    - export PROJECT_VERSION=`cat ./assembly/target/classes/project.properties | grep version | cut -d'=' -f2`    
+    - mvn $MAVEN_CLI_OPTS jar:jar deploy:deploy -DrepositoryId=artifactory-releases -f application/pom.xml
+    - mvn $MAVEN_CLI_OPTS jar:jar deploy:deploy -DrepositoryId=artifactory-releases -f core/pom.xml
+    - mvn $MAVEN_CLI_OPTS jar:jar deploy:deploy -DrepositoryId=artifactory-releases -f dhl/pom.xml
+    - mvn $MAVEN_CLI_OPTS jar:jar deploy:deploy -DrepositoryId=artifactory-releases -f infrastructure/pom.xml
+    - mvn $MAVEN_CLI_OPTS jar:jar deploy:deploy -DrepositoryId=artifactory-releases -f service/pom.xml
+    - mvn $MAVEN_CLI_OPTS jar:jar deploy:deploy -DrepositoryId=artifactory-releases -f tof/pom.xml
+#    - mvn $MAVEN_CLI_OPTS deploy:deploy-file -Dfile=features/target/feature/feature.xml -DrepositoryId=artifactory-releases -Durl=https://brodos.jfrog.io/brodos/libs-snapshots-local -DartifactId=AddressLabelGenerator-features -DgroupId=com.brodos.karaf.features -Dclassifier=features -Dversion="${PROJECT_VERSION}" -Dtype=xml
+  artifacts:
+    paths:
+     - assembly/*
+     - core/*
+     - infrastructure/*
+     - service/target/*
+     - application/*
+     - dhl/*
+     - tof/*
+     - features/*
+
+docker-build:
+  stage: packaging
+  image: docker:18
+  services:
+    - docker:18-dind
+  script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN gitlab-registry.brodos.net
+    - export PROJECT_VERSION=`cat ./assembly/target/classes/project.properties | grep version | cut -d'=' -f2`
+    - export ASSEMBLY=`cat ./assembly/target/classes/project.properties | grep finalName | cut -d'=' -f2`
+    - docker build --cache-from $CI_REGISTRY_IMAGE:latest --build-arg ASSEMBLY="${ASSEMBLY}" -t ${IMAGE_NAME} --tag $CI_REGISTRY_IMAGE:latest -f build/docker/Dockerfile .
+    - docker push ${IMAGE_NAME}
+    - docker push $CI_REGISTRY_IMAGE:latest
+    
+container_scan:
+  stage: test
+  image:
+    name: anchore/anchore-engine:v0.3.0
+    entrypoint: [""]
+  services:
+    - name: anchore/engine-db-preload:v0.3.0
+      alias: anchore-db
+
+  variables:
+    GIT_STRATEGY: none
+    ANCHORE_FAIL_ON_POLICY: "false"
+    ANCHORE_TIMEOUT: 500
+
+  script:
+    - |
+       chmod +x /tmp/anchore_ci_tools.py
+        ln -s /tmp/anchore_ci_tools.py /usr/local/bin/anchore_ci_tools
+    - anchore_ci_tools --setup
+    - anchore-cli --u admin --p foobar registry add $CI_REGISTRY gitlab-ci-token $CI_JOB_TOKEN --skip-validate
+    - anchore_ci_tools --analyze --report --image ${IMAGE_NAME} --timeout ${ANCHORE_TIMEOUT}
+    - |
+        if [ "$ANCHORE_FAIL_ON_POLICY" == "true" ]; then
+          anchore-cli evaluate check ${IMAGE_NAME}
+        else
+          set +o pipefail
+          anchore-cli evaluate check ${IMAGE_NAME} | tee /dev/null
+        fi
+
+  artifacts:
+    name: ${CI_JOB_NAME}-${CI_COMMIT_REF_NAME}
+    paths:
+    - anchore-reports/*
+  allow_failure: true  
+
+anchore_reports:
+  stage: publish
+  image: alpine:latest
+  dependencies:
+    - container_scan
+  variables:
+    GIT_STRATEGY: none
+
+  script:
+    - apk add jq
+    - |
+        echo "Parsing anchore reports."
+        printf "\n%s\n" "The following OS packages are installed on ${IMAGE_NAME}:"
+        jq '[.content | sort_by(.package) | .[] | {package: .package, version: .version}]' anchore-reports/image-content-os-report.json || true
+        printf "\n%s\n" "The following vulnerabilites were found on ${IMAGE_NAME}:"
+        jq '[.vulnerabilities | group_by(.package) | .[] | {package: .[0].package, vuln: [.[].vuln]}]' anchore-reports/image-vuln-report.json || true
+  allow_failure: true
+
+de-bai1-k8s-staging:
+    image:
+        name: alpine/helm:3.1.2
+        entrypoint: [""]
+    stage: deploy
+    environment:
+        name: de-bai1-staging
+        url: https://addresslabelgenerator-staging.brodos.net/addresslabelgenerator/health
+        kubernetes:
+            namespace: stockteam
+    when: manual
+    script:
+        - |
+            helm upgrade --install --wait addresslabelgeneratorstaging ./deployment/helm \
+            -n stockteam \
+            --set ciEnvironmentSlug="${CI_ENVIRONMENT_SLUG}" \
+            --set env.PPU_PARAM="${PPU_PARAM}" \
+            --set env.JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS}" \
+            --set env.DATABASE_URL="${DATABASE_URL}" \
+            --set env.DATASOURCE_NAME="${DATASOURCE_NAME}" \
+            --set env.DATABASE_NAME="${DATABASE_NAME}" \
+            --set env.DATABASE_PASSWORD="${DATABASE_PASSWORD}" \
+            --set env.ROUTINGCODE_GS1_API="${ROUTINGCODE_GS1_API}" \
+            --set env.ROUTINGCODE_API="${ROUTINGCODE_API}" \
+            --set env.APP_EXCLUDE_VALIDATION_DHL="${APP_EXCLUDE_VALIDATION_DHL}" \
+            --set env.PPU_LOGIN_URL="${PPU_LOGIN_URL}" \
+            --set env.DATABASE_USER="${DATABASE_USER}" \
+            --set env.APP_EXCLUDE_VALIDATION_TOF="${APP_EXCLUDE_VALIDATION_TOF}" \
+            --set env.PPU_API="${PPU_API}" \
+            --set env.APP_DHL_CLIENTS="${APP_DHL_CLIENTS}" \
+            --set ingressTraefik.host="${VHOST}" \
+            --set env.KUSHAL="${KUSHAL}" \
+            --set image.tag="${CI_COMMIT_REF_NAME}-${CI_PIPELINE_ID}"
+
+deploy_de-bai1-production:
+  image: gitlab-registry.brodos.net/mesosphere/dcos-cli:latest
+  stage: deploy
+  only:    
+    - /^[0-9]*.[0-9]*.[0-9]+$/
+  script:
+    - dcos cluster attach de-otc-eu-lt-1
+    - |
+        dcos marathon app update stock-projects/addresslabelgenerator << EOF
+        {
+               "env": {
+                 "PPU_PARAM": "${PPU_PARAM}",
+                 "JAVA_TOOL_OPTIONS": "-XX:ParallelGCThreads=2 -XX:CICompilerCount=2",
+                 "DATABASE_URL": "${DATABASE_URL}",
+                 "DATASOURCE_NAME": "${DATASOURCE_NAME}",
+                 "DATABASE_NAME": "${DATABASE_NAME}",
+                 "DATABASE_PASSWORD": "${DATABASE_PASSWORD}",
+                 "ROUTINGCODE_GS1_API": "${ROUTINGCODE_GS1_API}",
+                 "ROUTINGCODE_API": "${ROUTINGCODE_API}",
+                 "APP_EXCLUDE_VALIDATION_DHL": "${APP_EXCLUDE_VALIDATION_DHL}",
+                 "PPU_LOGIN_URL": "${PPU_LOGIN_URL}",
+                 "DATABASE_USER": "${DATABASE_USER}",
+                 "APP_EXCLUDE_VALIDATION_TOF": "${APP_EXCLUDE_VALIDATION_TOF}",
+                 "PPU_API": "${PPU_API}",
+                 "APP_DHL_CLIENTS": "${APP_DHL_CLIENTS}"
+               },
+               "labels": {
+                 "BRODOS-COSTUNIT": "144130",
+                 "HAPROXY_GROUP": "external",
+                 "BRODOS-TEAM": "Stock Team",
+                 "BRODOS-VCS": "https://gitlab.brodos.net/AddressLabelGenerator/AddressLabelGenerator",
+                 "BRODOS-PROJECTNO": "PROJEKTNO-4",
+                 "HAPROXY_0_VHOST": "${VHOST}"
+               },
+               "id": "/stock-projects/addresslabelgenerator",
+               "backoffFactor": 1.15,
+               "backoffSeconds": 1,
+               "container": {
+                 "portMappings": [
+                   {
+                     "containerPort": 8181,
+                     "hostPort": 0,
+                     "labels": {
+                       "VIP_0": "/stock-projects/addresslabelgenerator:8181"
+                     },
+                     "protocol": "tcp",        
+                     "name": "http"
+                   }
+                 ],
+                 "type": "DOCKER",
+                 "volumes": [],
+                 "docker": {
+                   "image": "${IMAGE_NAME}",
+                   "forcePullImage": true,
+                   "privileged": false,
+                   "parameters": [
+                     {
+                       "key": "log-opt",
+                       "value": "gelf-address=udp://de-bai1-gelf.brodosdmz.net:12201"
+                     },
+                     {
+                       "key": "log-opt",
+                       "value": "tag=stock-addresslabel-api-prod"
+                     },
+                     {
+                       "key": "log-driver",
+                       "value": "gelf"
+                     }
+                   ]
+                 }
+               },
+               "cpus": 2,
+               "disk": 0,
+               "fetch": [
+                 {
+                   "uri": "file:///etc/docker.tar.gz",
+                   "extract": true,
+                   "executable": false,
+                   "cache": false
+                 }
+               ],
+               "healthChecks": [
+                 {
+                   "gracePeriodSeconds": 300,
+                   "intervalSeconds": 60,
+                   "maxConsecutiveFailures": 3,
+                   "timeoutSeconds": 20,
+                   "delaySeconds": 15,
+                   "protocol": "COMMAND",
+                   "command": {
+                     "value": "curl -f localhost:8181/addresslabelgenerator/health"
+                   }
+                 }
+               ],
+               "instances": 1,
+               "maxLaunchDelaySeconds": 3600,
+               "mem": 1024,
+               "gpus": 0,
+               "networks": [
+                 {
+                   "name": "dcos",
+                   "mode": "container"
+                 }
+               ],
+               "requirePorts": false,
+               "upgradeStrategy": {
+                 "maximumOverCapacity": 1,
+                 "minimumHealthCapacity": 1
+               },
+               "killSelection": "YOUNGEST_FIRST",
+               "unreachableStrategy": {
+                 "inactiveAfterSeconds": 300,
+                 "expungeAfterSeconds": 600
+               },
+               "constraints": []
+        }
+        EOF    
+  environment:
+    name: de-bai1-production
+    url: https://addresslabelgenerator.brodos.net/addresslabelgenerator/health
+  when: manual  

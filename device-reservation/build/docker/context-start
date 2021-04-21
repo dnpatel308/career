@@ -1,0 +1,1 @@
+cd /opt/ ; java -Djava.security.egd=file:/dev/./urandom -Djava.net.preferIPv4Stack=true -Xms256m -Xmx512m -jar /opt/device-reservation-*.jar

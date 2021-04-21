@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.brodos.alg</groupId>
+        <artifactId>AddressLabelGenerator</artifactId>
+        <version>1.6.5</version>
+    </parent>
+
+    <artifactId>AddressLabelGenerator-infrastructure</artifactId>
+    <packaging>bundle</packaging>
+    <name>AddressLabelGenerator :: Infrastructure Layer</name>
+    <description>AddressLabelGenerator :: Infrastructure</description>
+
+    <url>http://www.brodos.de</url>
+
+    <properties>
+        <scanPath>com.brodos.alg.persistence</scanPath>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>AddressLabelGenerator-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.brodos.commons</groupId>
+            <artifactId>commons-domain</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.brodos.commons</groupId>
+            <artifactId>commons-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.brodos.commons</groupId>
+            <artifactId>commons-liquibase</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.ops4j.pax.jdbc</groupId>
+            <artifactId>pax-jdbc-pool-common</artifactId>
+            <version>1.1.0</version>
+        </dependency>
+
+        <!-- logging -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+
+        <!-- testing -->
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.core</artifactId>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate</groupId>
+            <artifactId>hibernate-core</artifactId>
+            <version>${hibernate.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <defaultGoal>install</defaultGoal>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
+                <version>3.0.1</version>
+                <configuration>
+                    <instructions>
+                        <_include>-osgi.bnd</_include>
+                    </instructions>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

@@ -1,0 +1,92 @@
+#!/bin/bash
+#
+# prerequisites:
+#   curl
+#   jq (json command line processor)
+#
+
+this=$0
+karaf_dir="`dirname $this`/.."
+etc_dir=${karaf_dir}/etc
+bin_dir=${karaf_dir}/bin
+
+
+function assertVariables {
+    for var in $@; do
+        # echo "variable $var: ${!var}"
+        if [ -z "${!var}" ]; then
+            echo "Please provide the environment parameter '$var'"
+            exit -1
+        fi
+    done
+}
+
+# copy config to etc folder
+# adjust accordingly to meet you needs
+assertVariables ROUTINGCODE_API PPU_LOGIN_URL PPU_API APP_EXCLUDE_VALIDATION_TOF APP_EXCLUDE_VALIDATION_DHL PPU_PARAM ROUTINGCODE_GS1_API APP_DHL_CLIENTS
+cat > ${etc_dir}/com.brodos.context.cfg <<END
+routingcode.api.url=${ROUTINGCODE_API}
+routingcode.gs1.api.url=${ROUTINGCODE_GS1_API}
+ppu=${PPU_PARAM}
+ppu.api.login.url=${PPU_LOGIN_URL}
+ppu.api.url=${PPU_API}
+ppu.api.parameter.barcode10kg=4250139871217
+ppu.api.parameter.barcode20kg=4250139871224
+ppu.api.parameter.barcode31kg=4250139871231
+tof.qrcode.version=11
+application.tof.exclude.fields.validation=${APP_EXCLUDE_VALIDATION_TOF}
+application.dhl.exclude.fields.validation=${APP_EXCLUDE_VALIDATION_DHL}
+application.dhl.clients=${APP_DHL_CLIENTS}
+application.common.exclude.fields.validation=labelSettings.barcodeDPI|labelSettings.labelHeight|labelSettings.labelRotation|labelSettings.labelWidth|labelSettings.qrcodeDPI|recipient.company|recipient.name1|recipient.name2|recipient.name3|recipient.phoneNo|routingCode|sender.company|sender.name1|sender.name2|sender.name3|sender.phoneNo|trackingCode|routingCode|recipient.country|sender.country
+application.request.fields.common.strings=freightForwarder.customProperties.shipmentReferenceNumber|printSize|recipient.city|recipient.houseNo|recipient.name1|recipient.name2|recipient.name3|recipient.phoneNo|recipient.postalCode|recipient.street|sender.city|sender.houseNo|sender.name1|sender.name2|sender.name3|sender.postalCode|sender.street|trackingCode|weight.unit|recipient.country
+application.request.fields.common.integers=labelSettings.barcodeDPI|labelSettings.labelHeight|labelSettings.labelRotation|labelSettings.labelWidth|labelSettings.qrcodeDPI|packageNoOutOfTotalPackages|totalNoOfPackages|weight.weightInIntegerRepresentation
+application.request.fields.dhl.strings=freightForwarder.customProperties.billingNo|freightForwarder.customProperties.deliveryDate|freightForwarder.customProperties.deliveryTimeRangeIdentifier|freightForwarder.customProperties.namedPersonOnly|freightForwarder.customProperties.referenceNo|freightForwarder.product|routingCode|sender.phoneNo
+application.request.fields.dhl.integers=
+application.request.fields.tof.strings=cod.currency|freight.currency|freightForwarder.customProperties.customerNumber|freightForwarder.customProperties.freeuse|freightForwarder.customProperties.shipmentType|freightForwarder.customProperties.shippingUnitCode|recipient.company|recipient.email|recipient.isoCountryCode|sender.company|sender.isoCountryCode
+application.request.fields.tof.integers=cod.amount|freight.amountInLowestDenomination|freightForwarder.customProperties.collectionType|freightForwarder.customProperties.noOfCompletePalletes|freightForwarder.customProperties.specialServiceCode|freightForwarder.customProperties.termsOfDeliveryCode
+client.TELEKOM1.exclude.fields=freightForwarder.customProperties.namedPersonOnly
+END
+
+assertVariables DATABASE_NAME DATABASE_USER DATABASE_PASSWORD DATASOURCE_NAME DATABASE_URL
+cat > ${etc_dir}/org.ops4j.datasource-LabelGenerator.cfg <<END
+osgi.jdbc.driver.name=mariadb
+databaseName=${DATABASE_NAME}
+user=${DATABASE_USER}
+password=${DATABASE_PASSWORD}
+dataSourceName=${DATASOURCE_NAME}
+url=${DATABASE_URL}
+pool = dbcp2
+jdbc.factory.validationQuery=SELECT 1
+jdbc.pool.testOnBorrow=true
+jdbc.pool.maxTotal=48
+jdbc.pool.maxIdle=36
+jdbc.pool.minIdle=12
+jdbc.pool.maxWaitMillis=6000
+END
+
+# AppDynamics integration. Activate by setting environment variable USE_APPDYNAMICS to 1.
+# This expects the local directory appdynamics-agent to exist
+if [ ! -z "${USE_APPDYNAMICS}" ] && [ -d "appdynamics-agent" ]; then
+    assertVariables APPDYNAMICS_CONTROLLER_HOST_NAME APPDYNAMICS_CONTROLLER_PORT APPDYNAMICS_AGENT_TIER_NAME APPDYNAMICS_AGENT_APPLICATION_NAME
+
+    cat > ${etc_dir}/custom.properties <<END
+org.osgi.framework.bootdelegation = \
+    com.sun.*, \
+    javax.transaction, \
+    javax.transaction.*, \
+    javax.xml.crypto, \
+    javax.xml.crypto.*, \
+    sun.*, \
+    org.apache.karaf.jaas.boot, \
+    org.apache.karaf.jaas.boot.principal, \
+    com.singularity, \
+    com.singularity.*
+END
+
+    echo 'export KARAF_OPTS="${KARAF_OPTS} -javaagent:'${karaf_dir}'/appdynamics-agent/javaagent.jar"' >> ${bin_dir}/setenv
+    echo 'export APPDYNAMICS_AGENT_NODE_NAME=${HOSTNAME}' >> ${bin_dir}/setenv
+fi
+
+# remove pid from previous start
+rm -f ${karaf_dir}/instances/instance.properties
+${karaf_dir}/bin/karaf ${KARAF_OPTS} $@

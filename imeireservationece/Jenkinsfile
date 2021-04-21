@@ -1,0 +1,189 @@
+pipeline {
+    environment {
+        SLACK_CHANNEL = '#stock-jenkins-alerts'
+        DOCKER_REPOSITORY = 'wms/imeireservationece'        
+        DCOS_ID_STAGING = 'stock-staging/imei-ece'
+        DCOS_ID_PRODUCTION_DE_OTC_EU_LT_1 = 'stock-projects/imei-ece'
+        GIT_BRANCH = "${env.GIT_BRANCH}"
+    }
+    agent any 
+    tools {
+        maven 'apache-maven-3.3.9'
+    }					
+    
+    stages {
+        stage('SCM') {
+            steps {     
+                slackSend channel: "${SLACK_CHANNEL}", color: 'good', message: "${env.JOB_NAME} - ${env.BUILD_NUMBER} Started (<${env.BUILD_URL}|Open>)"			
+                checkout([$class: 'GitSCM', branches: [[name: "${env.GIT_BRANCH}"]], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'CleanBeforeCheckout']], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'deployment', url: 'git@gitlab.brodos.net:wms/imeireservationece.git']]])
+
+            }
+        }
+        stage('Prepare & Build') {
+            steps {                 
+                                     
+                sh 'docker build --tag="${DOCKER_REPOSITORY}":"${GIT_BRANCH}"-"${BUILD_NUMBER}" -f build/docker/Dockerfile .'
+          }
+        }
+        stage('Publish Artifacts') {
+            parallel {
+                stage('Snapshot') {
+                    when {
+                      not {
+                         anyOf { 
+                            expression {
+                                return "${BRANCH_NAME}" =~ 'Branch_\\d+\\.\\d+'
+                                 }                
+                            tag pattern: "\\d+\\.\\d+\\.\\d+", comparator: "REGEXP"  
+                        }
+                       }
+                    }
+                    environment {
+                        DOCKER_REPOSITORY_URL = 'gitlab-registry.brodos.net'
+                    }                    
+                    steps {                        
+                        sh 'docker tag ${DOCKER_REPOSITORY}:"${GIT_BRANCH}"-${BUILD_NUMBER} ${DOCKER_REPOSITORY_URL}/${DOCKER_REPOSITORY}:latest'
+                        sh 'docker tag ${DOCKER_REPOSITORY}:"${GIT_BRANCH}"-${BUILD_NUMBER} ${DOCKER_REPOSITORY_URL}/${DOCKER_REPOSITORY}:"${GIT_BRANCH}"-${BUILD_NUMBER}'
+                        sh 'docker push ${DOCKER_REPOSITORY_URL}/${DOCKER_REPOSITORY}:"${GIT_BRANCH}"-${BUILD_NUMBER}'
+                        sh 'docker push ${DOCKER_REPOSITORY_URL}/${DOCKER_REPOSITORY}:latest'
+                        sh 'echo "${DOCKER_REPOSITORY_URL}/${DOCKER_REPOSITORY}:"${GIT_BRANCH}"-${BUILD_NUMBER} docker/Dockerfile" > anchore_images'                        
+                    }
+                }
+                stage('Release') {
+                    when {                      
+                         anyOf { 
+                            expression {
+                                return "${BRANCH_NAME}" =~ 'Branch_\\d+\\.\\d+'
+                                 }                
+                            tag pattern: "\\d+\\.\\d+\\.\\d+", comparator: "REGEXP"  
+                        }                       
+                    }
+                    environment {
+                        DOCKER_REPOSITORY_URL = 'gitlab-registry.brodos.net'
+                    }                    
+                    steps {                        
+                        sh 'docker tag ${DOCKER_REPOSITORY}:"${GIT_BRANCH}"-${BUILD_NUMBER} ${DOCKER_REPOSITORY_URL}/${DOCKER_REPOSITORY}:latest'
+                        sh 'docker tag ${DOCKER_REPOSITORY}:"${GIT_BRANCH}"-${BUILD_NUMBER} ${DOCKER_REPOSITORY_URL}/${DOCKER_REPOSITORY}:"${GIT_BRANCH}"-${BUILD_NUMBER}'
+                        sh 'docker push ${DOCKER_REPOSITORY_URL}/${DOCKER_REPOSITORY}:"${GIT_BRANCH}"-${BUILD_NUMBER}'
+                        sh 'docker push ${DOCKER_REPOSITORY_URL}/${DOCKER_REPOSITORY}:latest'
+                        sh 'echo "${DOCKER_REPOSITORY_URL}/${DOCKER_REPOSITORY}:"${GIT_BRANCH}"-${BUILD_NUMBER} docker/Dockerfile" > anchore_images'                        
+                    } 
+                }
+            }
+        }
+        stage('Container Tests') {
+            steps {
+                anchore bailOnFail: false, bailOnPluginFail: false, name: 'anchore_images'
+            }
+        }
+        stage('Deployment') {
+            parallel {
+                stage('Staging') {
+                   when {                                               
+                            expression {
+                                return "${BRANCH_NAME}" =~ 'Branch_\\d+\\.\\d+'
+                                 }                                            
+                    }
+                    environment {
+                        DOCKER_REPOSITORY_URL = 'gitlab-registry.brodos.net'
+                    }
+                    steps {
+                        slackSend channel: "${SLACK_CHANNEL}", color: 'good', message: "${env.JOB_NAME} - ${env.BUILD_NUMBER} Starting Deployment (<${env.BUILD_URL}|Open>)"
+                        sh 'dcos cluster attach de-bai1'                        
+                        marathon(
+                                credentialsId: 'dcos',
+                                docker: '${DOCKER_REPOSITORY_URL}/${DOCKER_REPOSITORY}:${GIT_BRANCH}-${BUILD_NUMBER}',
+                                dockerForcePull: false,
+                                env: [
+                                    [name: 'APPLICATION_ENV', value: 'staging']
+                                ],
+                                filename: 'deployment/marathon/marathon-staging.json',
+                                forceUpdate: true,
+                                id: '${DCOS_ID_STAGING}',
+                                labels: [[name: 'HAPROXY_GROUP', value: 'external'], 
+                                         [name: 'HAPROXY_0_VHOST', value: 'imeireservation-staging.brodos.net'],
+                                         [name: 'BRODOS-TEAM', value: 'Stock Team'],
+                                         [name: 'BRODOS-VCS', value: 'https://gitlab.brodos.net/wms/imeireservationece'],
+                                         [name: 'BRODOS-COSTUNIT', value: '144130'],
+                                         [name: 'BRODOS-PROJECTNO', value: 'PROJEKTNO-4'],
+                                         [name: 'traefik.enable', value: 'true'],
+                                         [name: 'traefik.http.routers.imeireservation-staging-http.rule', value: 'Host(`imeireservation-staging.brodos.net`)'],	
+										 [name: 'traefik.http.routers.imeireservation-staging-https.middlewares', value: 'redirectscheme-to-https@file, ipwhitelist-brodos-company@file'],
+										 [name: 'traefik.http.routers.imeireservation-staging-http.middlewares', value: 'redirectscheme-to-https@file, ipwhitelist-brodos-company@file'],
+										 [name: 'traefik.http.routers.imeireservation-staging-https.entrypoints', value: 'https'],
+										 [name: 'traefik.http.routers.imeireservation-staging-https.tls', value: 'true'],
+										 [name: 'traefik.http.routers.imeireservation-staging-http.entrypoints', value: 'http'],
+										 [name: 'traefik.http.routers.imeireservation-staging-https.rule', value: 'Host(`imeireservation-staging.brodos.net`)']
+                                        ],
+                                uris: [[uri: 'file:///etc/docker.tar.gz']],
+                                url: 'http://magi.brodosdmz.net:8080/'
+                        )                        
+                         
+                        sh returnStatus: true, script: '''GROUP="/${DCOS_ID_STAGING}"
+                                                        i="0"
+                                                        expect="1"
+                                                        echo "--- Waiting for deployment to finish ---"
+                                                        while [ $i -lt $expect ]
+                                                        do
+                                                            i=`dcos marathon app list | grep ${GROUP} | tr -s ' ' | cut -d" " -f 6 | grep '\\-\\-\\-' | wc -l`
+                                                        done'''
+                    }
+ 
+ 
+                }               
+                stage('de-otc-eu-lt-1') {
+                    when {
+                       tag pattern: "\\d+\\.\\d+\\.\\d+", comparator: "REGEXP"
+            
+                    }
+                    environment {
+                        DOCKER_REPOSITORY_URL = 'gitlab-registry.brodos.net'
+                    }
+                    steps {
+                        slackSend channel: "${SLACK_CHANNEL}", color: 'good', message: "${env.JOB_NAME} - ${env.BUILD_NUMBER} Starting Deployment (<${env.BUILD_URL}|Open>)"
+                        sh 'dcos cluster attach de-otc-eu-lt-1'						 
+                        marathon(
+                                credentialsId: 'dcos-de-otc-eu-lt-1',
+                                docker: '${DOCKER_REPOSITORY_URL}/${DOCKER_REPOSITORY}:${GIT_BRANCH}-${BUILD_NUMBER}',
+                                dockerForcePull: false,
+                                env: [],
+                                filename: 'deployment/marathon/marathon-de-otc-eu-lt-1.json',
+                                forceUpdate: true, 
+                                id: '${DCOS_ID_PRODUCTION_DE_OTC_EU_LT_1}',
+                                labels: [
+                                    [name: 'APPLICATION_ENV', value: 'production'],
+                                    [name: 'BRODOS-TEAM', value: 'Stock Team'],
+                                    [name: 'BRODOS-VCS', value: 'https://gitlab.brodos.net/wms/imeireservationece'],
+                                    [name: 'BRODOS-COSTUNIT', value: '144130'],
+                                    [name: 'BRODOS-PROJECTNO', value: 'PROJEKTNO-4']
+                                ],
+                                uris: [[uri: 'file:///etc/docker.tar.gz']],
+                                url: 'http://casper.de-otc-eu-lt-1.brodos.net:8080/'
+                        )                        
+                        sh returnStatus: true, script: '''GROUP="/${DCOS_ID_PRODUCTION_DE_OTC_EU_LT_1}"
+                                                        i="0"
+                                                        expect="1"
+                                                        echo "--- Waiting for deployment to finish ---"
+                                                        while [ $i -lt $expect ]
+                                                        do
+                                                            i=`dcos marathon app list | grep ${GROUP} | tr -s ' ' | cut -d" " -f 6 | grep '\\-\\-\\-' | wc -l`
+                                                        done'''
+                    }
+                }                
+            }
+        }                
+    }
+    post {
+          success {
+               step([$class: 'WsCleanup'])
+               slackSend channel: "${SLACK_CHANNEL}", color: 'good', message: "${env.JOB_NAME} - ${env.BUILD_NUMBER} Finished (<${env.BUILD_URL}|Open>)"
+          }
+          always {
+            sh 'check=`docker images --format {{.ID}}:{{.Repository}} | grep ${DOCKER_REPOSITORY} | cut -d: -f1 | uniq | wc -l` ; if [ $check -ge "1" ]; then docker rmi -f `docker images --format {{.ID}}:{{.Repository}} | grep ${DOCKER_REPOSITORY} | cut -d: -f1 | uniq`; else exit 0; fi'
+          }          
+          failure {
+                slackSend channel: "${SLACK_CHANNEL}", color: 'danger', message: "${env.JOB_NAME} - ${env.BUILD_NUMBER} Failed (<${env.BUILD_URL}|Open>)"
+
+          }
+    }
+}

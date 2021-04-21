@@ -1,0 +1,3 @@
+TestSuite;TestCase;Active;URLParameters;Body;StatusCode;AssertionMethod;AssertionArgs;TestLinkSettings
+GetDeviceReservationBySearchCriteria API file;MissingPageNo;TRUE;size=10;;400;assertEquals(java.lang.Object,java.lang.Object);Required int parameter '_page' is not present@.message;
+GetDeviceReservationBySearchCriteria API file;MissingSize;TRUE;page=0;;400;assertEquals(java.lang.Object,java.lang.Object);Required int parameter '_page' is not present@.message;

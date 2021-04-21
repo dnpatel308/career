@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DATA xmlns="http://brodos.net/schemas/Ticket/2007/01">    
+    <TABLE NAME="OPENCASE">
+        <DESCRIPTION>Open Case Info</DESCRIPTION>  
+        <BODY>
+            <ROW>   	
+                <COLUMN NAME="ARTICLEKEY">Article Number:</COLUMN>	
+                <COLUMN NAME="ARTICLEVAL">${ARTICLEVAL}</COLUMN>
+            </ROW>
+            <ROW>  
+                <COLUMN NAME="EMAILKEY">Email:</COLUMN>
+                <COLUMN NAME="EMAILVAL">${EMAILVAL}</COLUMN>
+            </ROW>
+            <ROW>  
+                <COLUMN NAME="CREATEDBYKEY">Created By:</COLUMN>
+                <COLUMN NAME="CREATEDBYVAL">${CREATEDBYVAL}</COLUMN>
+            </ROW>      
+            <ROW>
+                <COLUMN NAME="WAREHOUSENOKEY">Warehouse Number:</COLUMN>
+                <COLUMN NAME="WAREHOUSENO">${WAREHOUSENO}</COLUMN>
+            </ROW>      
+        </BODY>
+    </TABLE>
+</DATA>

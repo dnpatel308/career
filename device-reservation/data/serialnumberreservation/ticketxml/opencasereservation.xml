@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DATA xmlns="http://brodos.net/schemas/Ticket/2007/01">    
+    <TABLE NAME="IMEIRESERVATION">
+        <DESCRIPTION>Reservation Info</DESCRIPTION>  
+        <BODY>
+            <ROW>   	
+                <COLUMN NAME="ARTICLEKEY">Article Number:</COLUMN>	
+                <COLUMN NAME="ARTICLEVAL">${ARTICLEVAL}</COLUMN>
+            </ROW>
+            <ROW>  
+                <COLUMN NAME="EMAILKEY">Email:</COLUMN>
+                <COLUMN NAME="EMAILVAL">${EMAILVAL}</COLUMN>
+            </ROW>
+            <ROW>  
+                <COLUMN NAME="IMEIKEY">IMEI:</COLUMN>
+                <COLUMN NAME="IMEIVAL">${IMEIVAL}</COLUMN>    
+            </ROW>
+            <ROW>  
+                <COLUMN NAME="RESERVATIONCOMMENTKEY">Comment:</COLUMN>
+                <COLUMN NAME="RESERVATIONCOMMENTVAL">${RESERVATIONCOMMENTVAL}</COLUMN>    
+            </ROW>
+            <ROW>  
+                <COLUMN NAME="OPENCASETICKETKEY">Opencase Ticket:</COLUMN>
+                <COLUMN NAME="OPENCASETICKETVAL">${OPENCASETICKETVAL}</COLUMN>    
+            </ROW>
+            <ROW>  
+                <COLUMN NAME="CREATEDBYKEY">Created by:</COLUMN>
+                <COLUMN NAME="CREATEDBYVAL">${CREATEDBYVAL}</COLUMN>
+            </ROW>
+        </BODY>
+    </TABLE>
+</DATA>

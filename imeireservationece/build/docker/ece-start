@@ -1,0 +1,17 @@
+#!/bin/bash
+set -e 
+
+function assertVariables {
+    for var in $@; do
+        # echo "variable $var: ${!var}"
+        if [ -z "${!var}" ]; then
+            echo "Please provide the environment parameter '$var'"
+            exit -1
+        fi
+    done
+}
+
+assertVariables APPLICATION_ENV
+ln -s /usr/share/nginx/html/statics/env-${APPLICATION_ENV}.json /usr/share/nginx/html/statics/env.json
+
+nginx -g 'daemon off;'

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings xmlns="http://xmlns.jcp.org/xml/ns/persistence/orm"
+                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                 xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence/orm
+      http://xmlns.jcp.org/xml/ns/persistence/orm_2_1.xsd"
+                 version="2.1">
+    <mapped-superclass class="com.brodos.commons.event.entity.StoredEventMetadata">
+        <attributes>
+            <basic name="eventBody">
+                <column name="event_body" nullable="false" column-definition="varchar(2048)" />
+            </basic>
+            <basic name="typeName">
+                <column name="type_name" nullable="false" column-definition="varchar(256)" />
+            </basic>
+            <basic name="occurredOn">
+                <temporal>TIMESTAMP</temporal>
+                <column name="occurred_on" nullable="false" column-definition="timestamp" />
+            </basic>
+            <basic name="version">
+                <column name="version" nullable="false" column-definition="integer" />
+            </basic>
+        </attributes>
+    </mapped-superclass>
+    <entity name="StoredEvent" class="com.brodos.commons.event.entity.StoredLongEvent" access="FIELD">
+        <table name="domainevents"/>
+        <attributes>
+            <id name="eventId">
+                <column name="event_id" column-definition="integer(10)" nullable="false" />
+                <generated-value strategy="IDENTITY" />
+            </id>
+        </attributes>
+    </entity>
+    <entity name="StoredNotificationTracker" class="com.brodos.commons.notification.entity.StoredNotificationTracker" access="PROPERTY">
+        <table name="trackerstore"/>
+        <attributes>
+            <id name="id">
+                <column name="id" column-definition="integer(10)" nullable="false" />
+            </id>
+            <basic name="channelName">
+                <column name="channel_name" nullable="false" column-definition="varchar(50)" />
+            </basic>
+            <basic name="domainName">
+                <column name="domain_name" nullable="false" column-definition="varchar(50)" />
+            </basic>
+            <basic name="mostRecentPublishedNotificationId">
+                <column name="most_recently_published" nullable="false" column-definition="varchar(255)" />
+            </basic>
+        </attributes>
+    </entity>
+</entity-mappings>

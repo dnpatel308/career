@@ -1,0 +1,4 @@
+TestSuite;TestCase;Active;URLParameters;Body;StatusCode;AssertionMethod;AssertionArgs;TestLinkSettings
+GetDeviceReservationBySearchCriteria API file;MissingPageNo;TRUE;size=10;;200;;;
+GetDeviceReservationBySearchCriteria API file;MissingSize;TRUE;page=0;;200;;;
+GetDeviceReservationBySearchCriteria API file;ReservationStatusInvalid;TRUE;page=0&size=10&status=test;;400;assertEquals(java.lang.Object,java.lang.Object);Invalid reservation status provided.@.message;

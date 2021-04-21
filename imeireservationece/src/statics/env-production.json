@@ -1,0 +1,6 @@
+{
+    "STOCKAPI": "https://stock.brodos.net/wms/v1",
+    "BNETURL": "https://www.brodos.net/index.php/mpath/svoucher_imeimanagement",
+    "OTPAPI": "https://www.brodos.net/index.php/brocloak/consumeotp",
+    "REFRESHAPI": "https://www.brodos.net/index.php/brocloak/refreshtoken"
+}

@@ -1,0 +1,7 @@
+Import-Package: \
+    javax.annotation;version=1.2
+Export-Package: \
+    com.brodos.alg.dhl
+DynamicImport-Package: *
+-removeheaders Import-Service, Export-Service, Require-Capability
+-dsannotations: *

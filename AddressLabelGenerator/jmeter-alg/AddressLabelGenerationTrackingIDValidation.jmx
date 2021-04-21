@@ -1,0 +1,1173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.2.1">
+  <hashTree>
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Test Plan" enabled="true">
+      <stringProp name="TestPlan.comments"></stringProp>
+      <boolProp name="TestPlan.functional_mode">false</boolProp>
+      <boolProp name="TestPlan.tearDown_on_shutdown">true</boolProp>
+      <boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
+      <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+        <collectionProp name="Arguments.arguments"/>
+      </elementProp>
+      <stringProp name="TestPlan.user_define_classpath"></stringProp>
+    </TestPlan>
+    <hashTree>
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Thread Group :Staging " enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <stringProp name="LoopController.loops">1</stringProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">100</stringProp>
+        <stringProp name="ThreadGroup.ramp_time"></stringProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+        <stringProp name="ThreadGroup.duration"></stringProp>
+        <stringProp name="ThreadGroup.delay"></stringProp>
+        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+      </ThreadGroup>
+      <hashTree>
+        <JDBCDataSource guiclass="TestBeanGUI" testclass="JDBCDataSource" testname="My SQL Connection" enabled="true">
+          <boolProp name="autocommit">false</boolProp>
+          <stringProp name="checkQuery">SELECT 1</stringProp>
+          <stringProp name="connectionAge">5000</stringProp>
+          <stringProp name="dataSource">ALGDB</stringProp>
+          <stringProp name="dbUrl">${__P(alg_db_url)}</stringProp>
+          <stringProp name="driver">com.mysql.jdbc.Driver</stringProp>
+          <boolProp name="keepAlive">true</boolProp>
+          <stringProp name="password">${__P(alg_db_pass)}</stringProp>
+          <stringProp name="poolMax">1</stringProp>
+          <stringProp name="timeout">100000</stringProp>
+          <stringProp name="transactionIsolation">DEFAULT</stringProp>
+          <stringProp name="trimInterval">60000</stringProp>
+          <stringProp name="username">${__P(alg_db_user)}</stringProp>
+          <boolProp name="preinit">false</boolProp>
+          <stringProp name="initQuery"></stringProp>
+          <stringProp name="connectionProperties"></stringProp>
+        </JDBCDataSource>
+        <hashTree/>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Address Label Generation - MEDION1" enabled="true">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">{&#xd;
+   &quot;documentFormat&quot;:&quot;pdf&quot;,&#xd;
+   &quot;printSize&quot;:&quot;LASERPRINTER&quot;,&#xd;
+   &quot;client&quot;:&quot;MEDION1&quot;,&#xd;
+     &#xd;
+   &#xd;
+   &quot;freightForwarder&quot;:    {&#xd;
+      &quot;freightForwarderType&quot;: &quot;DHL&quot;,&#xd;
+        &quot;product&quot; :&quot;DHL_STANDARD&quot;,&#xd;
+      &quot;customProperties&quot;:       {&#xd;
+       &quot;shipmentReferenceNumber&quot;:&quot;123145&quot;,&#xd;
+          &quot;deliveryDate&quot; :&quot;2019-07-06&quot;,&#xd;
+         &quot;deliveryTimeRangeIdentifier&quot; :&quot;022&quot;,&#xd;
+         &quot;namedPersonOnly&quot; :&quot;true&quot;&#xd;
+      }&#xd;
+   },&#xd;
+   &quot;freight&quot;:{&#xd;
+      &quot;amountInLowestDenomination&quot;:123,&#xd;
+      &quot;currency&quot;:&quot;EUR&quot;&#xd;
+   },&#xd;
+   &quot;weight&quot;:{&#xd;
+      &quot;weightInIntegerRepresentation&quot;:4560,&#xd;
+      &quot;unit&quot;:&quot;g&quot;&#xd;
+   },&#xd;
+   &quot;totalNoOfPackages&quot;:1,&#xd;
+   &quot;packageNoOutOfTotalPackages&quot;:1,&#xd;
+   &quot;deliveryTimestamp&quot;:&quot;2019-07-0314:40:39+0000&quot;,&#xd;
+   &quot;sender&quot;: {&#xd;
+        &quot;company&quot;: &quot;Firma&quot;,&#xd;
+        &quot;name1&quot;: &quot;MEDION AG&quot;,&#xd;
+        &quot;name2&quot;: &quot;c/o Brodos AG&quot;,&#xd;
+        &quot;street&quot;: &quot;ErlangerStr.&quot;,&#xd;
+        &quot;country&quot;: &quot;Deutschland&quot;,&#xd;
+        &quot;isoCountryCode&quot;: &quot;DE&quot;,&#xd;
+        &quot;postalCode&quot;: &quot;91083&quot;,&#xd;
+        &quot;city&quot;: &quot;Baiersdorf&quot;,&#xd;
+        &quot;houseNo&quot;: &quot;9-13&quot;,&#xd;
+        &quot;phoneNo&quot;: &quot;09133/77770-0&quot;&#xd;
+    },&#xd;
+    &quot;recipient&quot;: {&#xd;
+        &quot;company&quot;: &quot;Herr/Frau&quot;,&#xd;
+        &quot;name1&quot;: &quot;Maximilian&quot;,&#xd;
+        &quot;name2&quot;: &quot;Mustermann&quot;,&#xd;
+        &quot;street&quot;: &quot;Erlanger Str.&quot;,&#xd;
+        &quot;country&quot;: &quot;Deutschland&quot;,&#xd;
+        &quot;isoCountryCode&quot;: &quot;DE&quot;,&#xd;
+        &quot;postalCode&quot;: &quot;91083&quot;,&#xd;
+        &quot;city&quot;: &quot;Baiersdorf&quot;,&#xd;
+        &quot;houseNo&quot;: &quot;9-13&quot;&#xd;
+    },&#xd;
+    &quot;labelSettings&quot;: {&#xd;
+        &quot;qrcodeDPI&quot;: 0,&#xd;
+        &quot;barcodeDPI&quot;: 0,&#xd;
+        &quot;labelWidth&quot;: 0,&#xd;
+        &quot;labelRotation&quot;: 0,&#xd;
+        &quot;labelHeight&quot;: 0&#xd;
+    }&#xd;
+}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${__P(alg_url)}</stringProp>
+          <stringProp name="HTTPSampler.port"></stringProp>
+          <stringProp name="HTTPSampler.protocol">${__P(alg_proto)}</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">${__P(alg_path)}</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Content-Type</stringProp>
+                <stringProp name="Header.value">application/json</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+          <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
+            <boolProp name="ResultCollector.error_logging">false</boolProp>
+            <objProp>
+              <name>saveConfig</name>
+              <value class="SampleSaveConfiguration">
+                <time>true</time>
+                <latency>true</latency>
+                <timestamp>true</timestamp>
+                <success>true</success>
+                <label>true</label>
+                <code>true</code>
+                <message>true</message>
+                <threadName>true</threadName>
+                <dataType>true</dataType>
+                <encoding>false</encoding>
+                <assertions>true</assertions>
+                <subresults>true</subresults>
+                <responseData>false</responseData>
+                <samplerData>false</samplerData>
+                <xml>false</xml>
+                <fieldNames>true</fieldNames>
+                <responseHeaders>false</responseHeaders>
+                <requestHeaders>false</requestHeaders>
+                <responseDataOnError>false</responseDataOnError>
+                <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+                <assertionsResultsToSave>0</assertionsResultsToSave>
+                <bytes>true</bytes>
+                <sentBytes>true</sentBytes>
+                <threadCounts>true</threadCounts>
+                <idleTime>true</idleTime>
+                <connectTime>true</connectTime>
+              </value>
+            </objProp>
+            <stringProp name="filename"></stringProp>
+          </ResultCollector>
+          <hashTree/>
+          <ResultCollector guiclass="StatVisualizer" testclass="ResultCollector" testname="Aggregate Report" enabled="true">
+            <boolProp name="ResultCollector.error_logging">false</boolProp>
+            <objProp>
+              <name>saveConfig</name>
+              <value class="SampleSaveConfiguration">
+                <time>true</time>
+                <latency>true</latency>
+                <timestamp>true</timestamp>
+                <success>true</success>
+                <label>true</label>
+                <code>true</code>
+                <message>true</message>
+                <threadName>true</threadName>
+                <dataType>true</dataType>
+                <encoding>false</encoding>
+                <assertions>true</assertions>
+                <subresults>true</subresults>
+                <responseData>false</responseData>
+                <samplerData>false</samplerData>
+                <xml>false</xml>
+                <fieldNames>true</fieldNames>
+                <responseHeaders>false</responseHeaders>
+                <requestHeaders>false</requestHeaders>
+                <responseDataOnError>false</responseDataOnError>
+                <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+                <assertionsResultsToSave>0</assertionsResultsToSave>
+                <bytes>true</bytes>
+                <sentBytes>true</sentBytes>
+                <threadCounts>true</threadCounts>
+                <idleTime>true</idleTime>
+                <connectTime>true</connectTime>
+              </value>
+            </objProp>
+            <stringProp name="filename"></stringProp>
+          </ResultCollector>
+          <hashTree/>
+          <ResultSaver guiclass="ResultSaverGui" testclass="ResultSaver" testname="Save Responses to a file" enabled="false">
+            <stringProp name="FileSaver.filename">ALGReport</stringProp>
+            <boolProp name="FileSaver.errorsonly">false</boolProp>
+            <boolProp name="FileSaver.skipautonumber">false</boolProp>
+            <boolProp name="FileSaver.skipsuffix">false</boolProp>
+            <boolProp name="FileSaver.successonly">true</boolProp>
+            <boolProp name="FileSaver.addTimstamp">true</boolProp>
+          </ResultSaver>
+          <hashTree/>
+        </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Address Label Generation -TELEKOM1" enabled="true">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">{&#xd;
+   &quot;documentFormat&quot;:&quot;pdf&quot;,&#xd;
+   &quot;printSize&quot;:&quot;LASERPRINTER&quot;,&#xd;
+   &quot;client&quot;:&quot;MEDION1&quot;,&#xd;
+     &#xd;
+   &#xd;
+   &quot;freightForwarder&quot;:    {&#xd;
+      &quot;freightForwarderType&quot;: &quot;DHL&quot;,&#xd;
+        &quot;product&quot; :&quot;DHL_STANDARD&quot;,&#xd;
+      &quot;customProperties&quot;:       {&#xd;
+       &quot;shipmentReferenceNumber&quot;:&quot;123145&quot;,&#xd;
+          &quot;deliveryDate&quot; :&quot;2019-07-06&quot;,&#xd;
+         &quot;deliveryTimeRangeIdentifier&quot; :&quot;022&quot;&#xd;
+      }&#xd;
+   },&#xd;
+   &quot;freight&quot;:{&#xd;
+      &quot;amountInLowestDenomination&quot;:123,&#xd;
+      &quot;currency&quot;:&quot;EUR&quot;&#xd;
+   },&#xd;
+   &quot;weight&quot;:{&#xd;
+      &quot;weightInIntegerRepresentation&quot;:4560,&#xd;
+      &quot;unit&quot;:&quot;g&quot;&#xd;
+   },&#xd;
+   &quot;totalNoOfPackages&quot;:1,&#xd;
+   &quot;packageNoOutOfTotalPackages&quot;:1,&#xd;
+   &quot;deliveryTimestamp&quot;:&quot;2019-07-0314:40:39+0000&quot;,&#xd;
+   &quot;sender&quot;: {&#xd;
+        &quot;company&quot;: &quot;Firma&quot;,&#xd;
+        &quot;name1&quot;: &quot;MEDION AG&quot;,&#xd;
+        &quot;name2&quot;: &quot;c/o Brodos AG&quot;,&#xd;
+        &quot;street&quot;: &quot;ErlangerStr.&quot;,&#xd;
+        &quot;country&quot;: &quot;Deutschland&quot;,&#xd;
+        &quot;isoCountryCode&quot;: &quot;DE&quot;,&#xd;
+        &quot;postalCode&quot;: &quot;91083&quot;,&#xd;
+        &quot;city&quot;: &quot;Baiersdorf&quot;,&#xd;
+        &quot;houseNo&quot;: &quot;9-13&quot;,&#xd;
+        &quot;phoneNo&quot;: &quot;09133/77770-0&quot;&#xd;
+    },&#xd;
+    &quot;recipient&quot;: {&#xd;
+        &quot;company&quot;: &quot;Herr/Frau&quot;,&#xd;
+        &quot;name1&quot;: &quot;Maximilian&quot;,&#xd;
+        &quot;name2&quot;: &quot;Mustermann&quot;,&#xd;
+        &quot;street&quot;: &quot;Erlanger Str.&quot;,&#xd;
+        &quot;country&quot;: &quot;Deutschland&quot;,&#xd;
+        &quot;isoCountryCode&quot;: &quot;DE&quot;,&#xd;
+        &quot;postalCode&quot;: &quot;91083&quot;,&#xd;
+        &quot;city&quot;: &quot;Baiersdorf&quot;,&#xd;
+        &quot;houseNo&quot;: &quot;9-13&quot;&#xd;
+    },&#xd;
+    &quot;labelSettings&quot;: {&#xd;
+        &quot;qrcodeDPI&quot;: 0,&#xd;
+        &quot;barcodeDPI&quot;: 0,&#xd;
+        &quot;labelWidth&quot;: 0,&#xd;
+        &quot;labelRotation&quot;: 0,&#xd;
+        &quot;labelHeight&quot;: 0&#xd;
+    }&#xd;
+}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${__P(alg_url)}</stringProp>
+          <stringProp name="HTTPSampler.port"></stringProp>
+          <stringProp name="HTTPSampler.protocol">${__P(alg_proto)}</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">${__P(alg_path)}</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Content-Type</stringProp>
+                <stringProp name="Header.value">application/json</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+          <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
+            <boolProp name="ResultCollector.error_logging">false</boolProp>
+            <objProp>
+              <name>saveConfig</name>
+              <value class="SampleSaveConfiguration">
+                <time>true</time>
+                <latency>true</latency>
+                <timestamp>true</timestamp>
+                <success>true</success>
+                <label>true</label>
+                <code>true</code>
+                <message>true</message>
+                <threadName>true</threadName>
+                <dataType>true</dataType>
+                <encoding>false</encoding>
+                <assertions>true</assertions>
+                <subresults>true</subresults>
+                <responseData>false</responseData>
+                <samplerData>false</samplerData>
+                <xml>false</xml>
+                <fieldNames>true</fieldNames>
+                <responseHeaders>false</responseHeaders>
+                <requestHeaders>false</requestHeaders>
+                <responseDataOnError>false</responseDataOnError>
+                <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+                <assertionsResultsToSave>0</assertionsResultsToSave>
+                <bytes>true</bytes>
+                <sentBytes>true</sentBytes>
+                <threadCounts>true</threadCounts>
+                <idleTime>true</idleTime>
+                <connectTime>true</connectTime>
+              </value>
+            </objProp>
+            <stringProp name="filename"></stringProp>
+          </ResultCollector>
+          <hashTree/>
+          <ResultCollector guiclass="StatVisualizer" testclass="ResultCollector" testname="Aggregate Report" enabled="true">
+            <boolProp name="ResultCollector.error_logging">false</boolProp>
+            <objProp>
+              <name>saveConfig</name>
+              <value class="SampleSaveConfiguration">
+                <time>true</time>
+                <latency>true</latency>
+                <timestamp>true</timestamp>
+                <success>true</success>
+                <label>true</label>
+                <code>true</code>
+                <message>true</message>
+                <threadName>true</threadName>
+                <dataType>true</dataType>
+                <encoding>false</encoding>
+                <assertions>true</assertions>
+                <subresults>true</subresults>
+                <responseData>false</responseData>
+                <samplerData>false</samplerData>
+                <xml>false</xml>
+                <fieldNames>true</fieldNames>
+                <responseHeaders>false</responseHeaders>
+                <requestHeaders>false</requestHeaders>
+                <responseDataOnError>false</responseDataOnError>
+                <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+                <assertionsResultsToSave>0</assertionsResultsToSave>
+                <bytes>true</bytes>
+                <sentBytes>true</sentBytes>
+                <threadCounts>true</threadCounts>
+                <idleTime>true</idleTime>
+                <connectTime>true</connectTime>
+              </value>
+            </objProp>
+            <stringProp name="filename"></stringProp>
+          </ResultCollector>
+          <hashTree/>
+        </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Address Label Generation -TOF" enabled="true">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">{&#xd;
+   &quot;documentFormat&quot;:&quot;PDF&quot;,&#xd;
+   &quot;printSize&quot;:&quot;DEFAULT&quot;,&#xd;
+   &quot;deliveryTimestamp&quot;:&quot;2006-06-18 10:44:02+0000&quot;,&#xd;
+   &quot;totalNoOfPackages&quot;:1,&#xd;
+   &quot;packageNoOutOfTotalPackages&quot;:1,&#xd;
+   &#xd;
+   &quot;freightForwarder&quot;:&#xd;
+   {&#xd;
+      &quot;freightForwarderType&quot;:&quot;TOF&quot;,&#xd;
+      &quot;customProperties&quot;:&#xd;
+      {&#xd;
+         &quot;customerNumber&quot;:&quot;544980030&quot;,&#xd;
+         &quot;shipmentReferenceNumber&quot;:&quot;296333fd4&quot;,&#xd;
+         &quot;shipmentType&quot;:&quot;international&quot;,&#xd;
+         &quot;shippingUnitCode&quot;:&quot;C&quot;,&#xd;
+         &quot;specialServiceCode&quot;:10,&#xd;
+         &quot;termsOfDeliveryCode&quot;:3,&#xd;
+          &quot;collectionType&quot;:6,&#xd;
+            &quot;freeuse&quot;:&quot;B:2966576,L:2963334|Vorangsnummer:2963334&quot;&#xd;
+      }&#xd;
+   },&#xd;
+   &#xd;
+   &quot;freight&quot;:&#xd;
+   {&#xd;
+      &quot;amountInLowestDenomination&quot;:400,&#xd;
+      &quot;currency&quot;:&quot;EUR&quot;&#xd;
+    },&#xd;
+&quot;cod&quot;:&#xd;
+   {&#xd;
+      &quot;amount&quot;:400,&#xd;
+      &quot;currency&quot;:&quot;EUR&quot;&#xd;
+    },&#xd;
+    &#xd;
+    &quot;weight&quot;:&#xd;
+   {&#xd;
+      &quot;weightInIntegerRepresentation&quot;:100000,&#xd;
+      &quot;unit&quot;:&quot;g&quot;&#xd;
+   },&#xd;
+   &quot;sender&quot;:&#xd;
+   {&#xd;
+      &quot;company&quot;:&quot;Firma&quot;,&#xd;
+      &quot;name1&quot;:&quot;Brodos AG&quot;,&#xd;
+      &quot;street&quot;:&quot;Erlanger Str.&quot;,&#xd;
+      &quot;country&quot;:&quot;Deutschland&quot;,&#xd;
+      &quot;isoCountryCode&quot;:&quot;DEU&quot;,&#xd;
+      &quot;postalCode&quot;:&quot;91083&quot;,&#xd;
+      &quot;city&quot;:&quot;Baiersdorf&quot;,&#xd;
+      &quot;houseNo&quot;:&quot;9-13&quot;,&#xd;
+      &quot;phoneNo&quot;:&quot;09133/7770-0&quot;,&#xd;
+      &quot;email&quot;:&quot;info@my-extra.com&quot;&#xd;
+   },&#xd;
+   &quot;recipient&quot;:&#xd;
+   {&#xd;
+      &quot;company&quot;:&quot;trans-o-flex IT Service GmbH &quot;,&#xd;
+      &quot;name1&quot;:&quot;/Ralf&quot;,&#xd;
+      &quot;name2&quot;:&quot;Dechant&quot;,&#xd;
+      &quot;street&quot;:&quot;Adolph-Kolping-Str.&quot;,&#xd;
+      &quot;country&quot;:&quot;Deutschland&quot;,&#xd;
+      &quot;isoCountryCode&quot;:&quot;DE&quot;,&#xd;
+      &quot;postalCode&quot;:&quot;85356&quot;,&#xd;
+      &quot;city&quot;:&quot;Freising&quot;,&#xd;
+      &quot;houseNo&quot;:&quot;10&quot;,&#xd;
+      &quot;phoneNo&quot;:&quot;08161985223&quot;,&#xd;
+      &quot;email&quot;:&quot;ralf.dechant@tof.de&quot;&#xd;
+   }, &#xd;
+   &quot;labelSettings&quot;: {&#xd;
+        &quot;qrcodeDPI&quot;: 0,&#xd;
+        &quot;barcodeDPI&quot;: 0,&#xd;
+        &quot;labelWidth&quot;: 0,&#xd;
+        &quot;labelRotation&quot;: 0,&#xd;
+        &quot;labelHeight&quot;: 0&#xd;
+    }&#xd;
+}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${__P(alg_url)}</stringProp>
+          <stringProp name="HTTPSampler.port"></stringProp>
+          <stringProp name="HTTPSampler.protocol">${__P(alg_proto)}</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">${__P(alg_path)}</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Content-Type</stringProp>
+                <stringProp name="Header.value">application/json</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+          <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
+            <boolProp name="ResultCollector.error_logging">false</boolProp>
+            <objProp>
+              <name>saveConfig</name>
+              <value class="SampleSaveConfiguration">
+                <time>true</time>
+                <latency>true</latency>
+                <timestamp>true</timestamp>
+                <success>true</success>
+                <label>true</label>
+                <code>true</code>
+                <message>true</message>
+                <threadName>true</threadName>
+                <dataType>true</dataType>
+                <encoding>false</encoding>
+                <assertions>true</assertions>
+                <subresults>true</subresults>
+                <responseData>false</responseData>
+                <samplerData>false</samplerData>
+                <xml>false</xml>
+                <fieldNames>true</fieldNames>
+                <responseHeaders>false</responseHeaders>
+                <requestHeaders>false</requestHeaders>
+                <responseDataOnError>false</responseDataOnError>
+                <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+                <assertionsResultsToSave>0</assertionsResultsToSave>
+                <bytes>true</bytes>
+                <sentBytes>true</sentBytes>
+                <threadCounts>true</threadCounts>
+                <idleTime>true</idleTime>
+                <connectTime>true</connectTime>
+              </value>
+            </objProp>
+            <stringProp name="filename"></stringProp>
+          </ResultCollector>
+          <hashTree/>
+          <ResultCollector guiclass="StatVisualizer" testclass="ResultCollector" testname="Aggregate Report" enabled="true">
+            <boolProp name="ResultCollector.error_logging">false</boolProp>
+            <objProp>
+              <name>saveConfig</name>
+              <value class="SampleSaveConfiguration">
+                <time>true</time>
+                <latency>true</latency>
+                <timestamp>true</timestamp>
+                <success>true</success>
+                <label>true</label>
+                <code>true</code>
+                <message>true</message>
+                <threadName>true</threadName>
+                <dataType>true</dataType>
+                <encoding>false</encoding>
+                <assertions>true</assertions>
+                <subresults>true</subresults>
+                <responseData>false</responseData>
+                <samplerData>false</samplerData>
+                <xml>false</xml>
+                <fieldNames>true</fieldNames>
+                <responseHeaders>false</responseHeaders>
+                <requestHeaders>false</requestHeaders>
+                <responseDataOnError>false</responseDataOnError>
+                <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+                <assertionsResultsToSave>0</assertionsResultsToSave>
+                <bytes>true</bytes>
+                <sentBytes>true</sentBytes>
+                <threadCounts>true</threadCounts>
+                <idleTime>true</idleTime>
+                <connectTime>true</connectTime>
+              </value>
+            </objProp>
+            <stringProp name="filename"></stringProp>
+          </ResultCollector>
+          <hashTree/>
+        </hashTree>
+        <JDBCSampler guiclass="TestBeanGUI" testclass="JDBCSampler" testname="Request to check dublicate TrackingID in ALG DB" enabled="true">
+          <stringProp name="dataSource">ALGDB</stringProp>
+          <stringProp name="query">SELECT `tracking_code` FROM  `address_label` WHERE `created_timestamp` &gt;= DATE_SUB(NOW(),INTERVAL 5 MINUTE) GROUP BY `tracking_code` HAVING COUNT(`tracking_code`) &gt; 1</stringProp>
+          <stringProp name="queryArguments"></stringProp>
+          <stringProp name="queryArgumentsTypes"></stringProp>
+          <stringProp name="queryTimeout"></stringProp>
+          <stringProp name="queryType">Select Statement</stringProp>
+          <stringProp name="resultSetHandler">Store as Object</stringProp>
+          <stringProp name="resultVariable">TrackingCode</stringProp>
+          <stringProp name="variableNames"></stringProp>
+          <stringProp name="resultSetMaxRows"></stringProp>
+        </JDBCSampler>
+        <hashTree>
+          <BeanShellAssertion guiclass="BeanShellAssertionGui" testclass="BeanShellAssertion" testname="BeanShell Assertion" enabled="true">
+            <stringProp name="BeanShellAssertion.query">if(vars.getObject(&quot;TrackingCode&quot;).size() != 0)
+{
+	log.info(&quot;not good :( &quot;+ vars.getObject(&quot;TrackingCode&quot;));
+	print(&quot;No of duplicate values&quot;+ vars.getObject(&quot;TrackingCode&quot;).size());
+	print(&quot;duplicate values : &quot;+ vars.getObject(&quot;TrackingCode&quot;));
+	
+}
+else
+{
+	log.info(&quot;No duplicate values&quot;);
+}
+</stringProp>
+            <stringProp name="BeanShellAssertion.filename"></stringProp>
+            <stringProp name="BeanShellAssertion.parameters"></stringProp>
+            <boolProp name="BeanShellAssertion.resetInterpreter">false</boolProp>
+          </BeanShellAssertion>
+          <hashTree/>
+        </hashTree>
+        <ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="Summary Report For ALG DB Request" enabled="true">
+          <boolProp name="ResultCollector.error_logging">false</boolProp>
+          <objProp>
+            <name>saveConfig</name>
+            <value class="SampleSaveConfiguration">
+              <time>true</time>
+              <latency>true</latency>
+              <timestamp>true</timestamp>
+              <success>true</success>
+              <label>true</label>
+              <code>true</code>
+              <message>true</message>
+              <threadName>true</threadName>
+              <dataType>false</dataType>
+              <encoding>false</encoding>
+              <assertions>true</assertions>
+              <subresults>true</subresults>
+              <responseData>false</responseData>
+              <samplerData>false</samplerData>
+              <xml>false</xml>
+              <fieldNames>true</fieldNames>
+              <responseHeaders>false</responseHeaders>
+              <requestHeaders>false</requestHeaders>
+              <responseDataOnError>false</responseDataOnError>
+              <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+              <assertionsResultsToSave>0</assertionsResultsToSave>
+              <bytes>true</bytes>
+              <sentBytes>true</sentBytes>
+              <threadCounts>true</threadCounts>
+              <sampleCount>true</sampleCount>
+              <idleTime>true</idleTime>
+              <connectTime>true</connectTime>
+            </value>
+          </objProp>
+          <stringProp name="filename">${__P(alg_report)}</stringProp>
+        </ResultCollector>
+        <hashTree/>
+      </hashTree>
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Thread Group :Local" enabled="false">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <stringProp name="LoopController.loops">1</stringProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">50</stringProp>
+        <stringProp name="ThreadGroup.ramp_time"></stringProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+        <stringProp name="ThreadGroup.duration"></stringProp>
+        <stringProp name="ThreadGroup.delay"></stringProp>
+        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+      </ThreadGroup>
+      <hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Address Label Generation - MEDION1" enabled="false">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">{&#xd;
+   &quot;documentFormat&quot;:&quot;pdf&quot;,&#xd;
+   &quot;printSize&quot;:&quot;LASERPRINTER&quot;,&#xd;
+   &quot;client&quot;:&quot;MEDION1&quot;,&#xd;
+     &#xd;
+   &#xd;
+   &quot;freightForwarder&quot;:    {&#xd;
+      &quot;freightForwarderType&quot;: &quot;DHL&quot;,&#xd;
+        &quot;product&quot; :&quot;DHL_STANDARD&quot;,&#xd;
+      &quot;customProperties&quot;:       {&#xd;
+       &quot;shipmentReferenceNumber&quot;:&quot;123145&quot;,&#xd;
+          &quot;deliveryDate&quot; :&quot;2019-07-06&quot;,&#xd;
+         &quot;deliveryTimeRangeIdentifier&quot; :&quot;022&quot;,&#xd;
+         &quot;namedPersonOnly&quot; :&quot;true&quot;&#xd;
+      }&#xd;
+   },&#xd;
+   &quot;freight&quot;:{&#xd;
+      &quot;amountInLowestDenomination&quot;:123,&#xd;
+      &quot;currency&quot;:&quot;EUR&quot;&#xd;
+   },&#xd;
+   &quot;weight&quot;:{&#xd;
+      &quot;weightInIntegerRepresentation&quot;:4560,&#xd;
+      &quot;unit&quot;:&quot;g&quot;&#xd;
+   },&#xd;
+   &quot;totalNoOfPackages&quot;:1,&#xd;
+   &quot;packageNoOutOfTotalPackages&quot;:1,&#xd;
+   &quot;deliveryTimestamp&quot;:&quot;2019-07-0314:40:39+0000&quot;,&#xd;
+   &quot;sender&quot;: {&#xd;
+        &quot;company&quot;: &quot;Firma&quot;,&#xd;
+        &quot;name1&quot;: &quot;MEDION AG&quot;,&#xd;
+        &quot;name2&quot;: &quot;c/o Brodos AG&quot;,&#xd;
+        &quot;street&quot;: &quot;ErlangerStr.&quot;,&#xd;
+        &quot;country&quot;: &quot;Deutschland&quot;,&#xd;
+        &quot;isoCountryCode&quot;: &quot;DE&quot;,&#xd;
+        &quot;postalCode&quot;: &quot;91083&quot;,&#xd;
+        &quot;city&quot;: &quot;Baiersdorf&quot;,&#xd;
+        &quot;houseNo&quot;: &quot;9-13&quot;,&#xd;
+        &quot;phoneNo&quot;: &quot;09133/77770-0&quot;&#xd;
+    },&#xd;
+    &quot;recipient&quot;: {&#xd;
+        &quot;company&quot;: &quot;Herr/Frau&quot;,&#xd;
+        &quot;name1&quot;: &quot;Maximilian&quot;,&#xd;
+        &quot;name2&quot;: &quot;Mustermann&quot;,&#xd;
+        &quot;street&quot;: &quot;Erlanger Str.&quot;,&#xd;
+        &quot;country&quot;: &quot;Deutschland&quot;,&#xd;
+        &quot;isoCountryCode&quot;: &quot;DE&quot;,&#xd;
+        &quot;postalCode&quot;: &quot;91083&quot;,&#xd;
+        &quot;city&quot;: &quot;Baiersdorf&quot;,&#xd;
+        &quot;houseNo&quot;: &quot;9-13&quot;&#xd;
+    },&#xd;
+    &quot;labelSettings&quot;: {&#xd;
+        &quot;qrcodeDPI&quot;: 0,&#xd;
+        &quot;barcodeDPI&quot;: 0,&#xd;
+        &quot;labelWidth&quot;: 0,&#xd;
+        &quot;labelRotation&quot;: 0,&#xd;
+        &quot;labelHeight&quot;: 0&#xd;
+    }&#xd;
+}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">172.31.100.69</stringProp>
+          <stringProp name="HTTPSampler.port">8181</stringProp>
+          <stringProp name="HTTPSampler.protocol">http</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">addresslabelgenerator/v2/addresslabel/</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Content-Type</stringProp>
+                <stringProp name="Header.value">application/json</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+          <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
+            <boolProp name="ResultCollector.error_logging">false</boolProp>
+            <objProp>
+              <name>saveConfig</name>
+              <value class="SampleSaveConfiguration">
+                <time>true</time>
+                <latency>true</latency>
+                <timestamp>true</timestamp>
+                <success>true</success>
+                <label>true</label>
+                <code>true</code>
+                <message>true</message>
+                <threadName>true</threadName>
+                <dataType>true</dataType>
+                <encoding>false</encoding>
+                <assertions>true</assertions>
+                <subresults>true</subresults>
+                <responseData>false</responseData>
+                <samplerData>false</samplerData>
+                <xml>false</xml>
+                <fieldNames>true</fieldNames>
+                <responseHeaders>false</responseHeaders>
+                <requestHeaders>false</requestHeaders>
+                <responseDataOnError>false</responseDataOnError>
+                <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+                <assertionsResultsToSave>0</assertionsResultsToSave>
+                <bytes>true</bytes>
+                <sentBytes>true</sentBytes>
+                <threadCounts>true</threadCounts>
+                <idleTime>true</idleTime>
+                <connectTime>true</connectTime>
+              </value>
+            </objProp>
+            <stringProp name="filename"></stringProp>
+          </ResultCollector>
+          <hashTree/>
+          <ResultCollector guiclass="StatVisualizer" testclass="ResultCollector" testname="Aggregate Report" enabled="true">
+            <boolProp name="ResultCollector.error_logging">false</boolProp>
+            <objProp>
+              <name>saveConfig</name>
+              <value class="SampleSaveConfiguration">
+                <time>true</time>
+                <latency>true</latency>
+                <timestamp>true</timestamp>
+                <success>true</success>
+                <label>true</label>
+                <code>true</code>
+                <message>true</message>
+                <threadName>true</threadName>
+                <dataType>true</dataType>
+                <encoding>false</encoding>
+                <assertions>true</assertions>
+                <subresults>true</subresults>
+                <responseData>false</responseData>
+                <samplerData>false</samplerData>
+                <xml>false</xml>
+                <fieldNames>true</fieldNames>
+                <responseHeaders>false</responseHeaders>
+                <requestHeaders>false</requestHeaders>
+                <responseDataOnError>false</responseDataOnError>
+                <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+                <assertionsResultsToSave>0</assertionsResultsToSave>
+                <bytes>true</bytes>
+                <sentBytes>true</sentBytes>
+                <threadCounts>true</threadCounts>
+                <idleTime>true</idleTime>
+                <connectTime>true</connectTime>
+              </value>
+            </objProp>
+            <stringProp name="filename">D:\Jmeter\Projects\ALG Response</stringProp>
+          </ResultCollector>
+          <hashTree/>
+          <ResultSaver guiclass="ResultSaverGui" testclass="ResultSaver" testname="Save Responses to a file" enabled="true">
+            <stringProp name="FileSaver.filename">ALGReport</stringProp>
+            <boolProp name="FileSaver.errorsonly">false</boolProp>
+            <boolProp name="FileSaver.skipautonumber">false</boolProp>
+            <boolProp name="FileSaver.skipsuffix">false</boolProp>
+            <boolProp name="FileSaver.successonly">true</boolProp>
+            <boolProp name="FileSaver.addTimstamp">true</boolProp>
+          </ResultSaver>
+          <hashTree/>
+        </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Address Label Generation -TELEKOM1" enabled="false">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">{&#xd;
+   &quot;documentFormat&quot;:&quot;pdf&quot;,&#xd;
+   &quot;printSize&quot;:&quot;LASERPRINTER&quot;,&#xd;
+   &quot;client&quot;:&quot;MEDION1&quot;,&#xd;
+     &#xd;
+   &#xd;
+   &quot;freightForwarder&quot;:    {&#xd;
+      &quot;freightForwarderType&quot;: &quot;DHL&quot;,&#xd;
+        &quot;product&quot; :&quot;DHL_STANDARD&quot;,&#xd;
+      &quot;customProperties&quot;:       {&#xd;
+       &quot;shipmentReferenceNumber&quot;:&quot;123145&quot;,&#xd;
+          &quot;deliveryDate&quot; :&quot;2019-07-06&quot;,&#xd;
+         &quot;deliveryTimeRangeIdentifier&quot; :&quot;022&quot;&#xd;
+      }&#xd;
+   },&#xd;
+   &quot;freight&quot;:{&#xd;
+      &quot;amountInLowestDenomination&quot;:123,&#xd;
+      &quot;currency&quot;:&quot;EUR&quot;&#xd;
+   },&#xd;
+   &quot;weight&quot;:{&#xd;
+      &quot;weightInIntegerRepresentation&quot;:4560,&#xd;
+      &quot;unit&quot;:&quot;g&quot;&#xd;
+   },&#xd;
+   &quot;totalNoOfPackages&quot;:1,&#xd;
+   &quot;packageNoOutOfTotalPackages&quot;:1,&#xd;
+   &quot;deliveryTimestamp&quot;:&quot;2019-07-0314:40:39+0000&quot;,&#xd;
+   &quot;sender&quot;: {&#xd;
+        &quot;company&quot;: &quot;Firma&quot;,&#xd;
+        &quot;name1&quot;: &quot;MEDION AG&quot;,&#xd;
+        &quot;name2&quot;: &quot;c/o Brodos AG&quot;,&#xd;
+        &quot;street&quot;: &quot;ErlangerStr.&quot;,&#xd;
+        &quot;country&quot;: &quot;Deutschland&quot;,&#xd;
+        &quot;isoCountryCode&quot;: &quot;DE&quot;,&#xd;
+        &quot;postalCode&quot;: &quot;91083&quot;,&#xd;
+        &quot;city&quot;: &quot;Baiersdorf&quot;,&#xd;
+        &quot;houseNo&quot;: &quot;9-13&quot;,&#xd;
+        &quot;phoneNo&quot;: &quot;09133/77770-0&quot;&#xd;
+    },&#xd;
+    &quot;recipient&quot;: {&#xd;
+        &quot;company&quot;: &quot;Herr/Frau&quot;,&#xd;
+        &quot;name1&quot;: &quot;Maximilian&quot;,&#xd;
+        &quot;name2&quot;: &quot;Mustermann&quot;,&#xd;
+        &quot;street&quot;: &quot;Erlanger Str.&quot;,&#xd;
+        &quot;country&quot;: &quot;Deutschland&quot;,&#xd;
+        &quot;isoCountryCode&quot;: &quot;DE&quot;,&#xd;
+        &quot;postalCode&quot;: &quot;91083&quot;,&#xd;
+        &quot;city&quot;: &quot;Baiersdorf&quot;,&#xd;
+        &quot;houseNo&quot;: &quot;9-13&quot;&#xd;
+    },&#xd;
+    &quot;labelSettings&quot;: {&#xd;
+        &quot;qrcodeDPI&quot;: 0,&#xd;
+        &quot;barcodeDPI&quot;: 0,&#xd;
+        &quot;labelWidth&quot;: 0,&#xd;
+        &quot;labelRotation&quot;: 0,&#xd;
+        &quot;labelHeight&quot;: 0&#xd;
+    }&#xd;
+}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">172.31.100.69</stringProp>
+          <stringProp name="HTTPSampler.port">8181</stringProp>
+          <stringProp name="HTTPSampler.protocol">http</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">addresslabelgenerator/v2/addresslabel/</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Content-Type</stringProp>
+                <stringProp name="Header.value">application/json</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+          <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
+            <boolProp name="ResultCollector.error_logging">false</boolProp>
+            <objProp>
+              <name>saveConfig</name>
+              <value class="SampleSaveConfiguration">
+                <time>true</time>
+                <latency>true</latency>
+                <timestamp>true</timestamp>
+                <success>true</success>
+                <label>true</label>
+                <code>true</code>
+                <message>true</message>
+                <threadName>true</threadName>
+                <dataType>true</dataType>
+                <encoding>false</encoding>
+                <assertions>true</assertions>
+                <subresults>true</subresults>
+                <responseData>false</responseData>
+                <samplerData>false</samplerData>
+                <xml>false</xml>
+                <fieldNames>true</fieldNames>
+                <responseHeaders>false</responseHeaders>
+                <requestHeaders>false</requestHeaders>
+                <responseDataOnError>false</responseDataOnError>
+                <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+                <assertionsResultsToSave>0</assertionsResultsToSave>
+                <bytes>true</bytes>
+                <sentBytes>true</sentBytes>
+                <threadCounts>true</threadCounts>
+                <idleTime>true</idleTime>
+                <connectTime>true</connectTime>
+              </value>
+            </objProp>
+            <stringProp name="filename"></stringProp>
+          </ResultCollector>
+          <hashTree/>
+          <ResultCollector guiclass="StatVisualizer" testclass="ResultCollector" testname="Aggregate Report" enabled="true">
+            <boolProp name="ResultCollector.error_logging">false</boolProp>
+            <objProp>
+              <name>saveConfig</name>
+              <value class="SampleSaveConfiguration">
+                <time>true</time>
+                <latency>true</latency>
+                <timestamp>true</timestamp>
+                <success>true</success>
+                <label>true</label>
+                <code>true</code>
+                <message>true</message>
+                <threadName>true</threadName>
+                <dataType>true</dataType>
+                <encoding>false</encoding>
+                <assertions>true</assertions>
+                <subresults>true</subresults>
+                <responseData>false</responseData>
+                <samplerData>false</samplerData>
+                <xml>false</xml>
+                <fieldNames>true</fieldNames>
+                <responseHeaders>false</responseHeaders>
+                <requestHeaders>false</requestHeaders>
+                <responseDataOnError>false</responseDataOnError>
+                <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+                <assertionsResultsToSave>0</assertionsResultsToSave>
+                <bytes>true</bytes>
+                <sentBytes>true</sentBytes>
+                <threadCounts>true</threadCounts>
+                <idleTime>true</idleTime>
+                <connectTime>true</connectTime>
+              </value>
+            </objProp>
+            <stringProp name="filename"></stringProp>
+          </ResultCollector>
+          <hashTree/>
+        </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Address Label Generation -TOF" enabled="true">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">{&#xd;
+   &quot;documentFormat&quot;:&quot;PDF&quot;,&#xd;
+   &quot;printSize&quot;:&quot;DEFAULT&quot;,&#xd;
+   &quot;deliveryTimestamp&quot;:&quot;2006-06-18 10:44:02+0000&quot;,&#xd;
+   &quot;totalNoOfPackages&quot;:1,&#xd;
+   &quot;packageNoOutOfTotalPackages&quot;:1,&#xd;
+   &#xd;
+   &quot;freightForwarder&quot;:&#xd;
+   {&#xd;
+      &quot;freightForwarderType&quot;:&quot;TOF&quot;,&#xd;
+      &quot;customProperties&quot;:&#xd;
+      {&#xd;
+         &quot;customerNumber&quot;:&quot;544980030&quot;,&#xd;
+         &quot;shipmentReferenceNumber&quot;:&quot;296333fd4&quot;,&#xd;
+         &quot;shipmentType&quot;:&quot;international&quot;,&#xd;
+         &quot;shippingUnitCode&quot;:&quot;C&quot;,&#xd;
+         &quot;specialServiceCode&quot;:10,&#xd;
+         &quot;termsOfDeliveryCode&quot;:3,&#xd;
+          &quot;collectionType&quot;:6,&#xd;
+            &quot;freeuse&quot;:&quot;B:2966576,L:2963334|Vorangsnummer:2963334&quot;&#xd;
+      }&#xd;
+   },&#xd;
+   &#xd;
+   &quot;freight&quot;:&#xd;
+   {&#xd;
+      &quot;amountInLowestDenomination&quot;:400,&#xd;
+      &quot;currency&quot;:&quot;EUR&quot;&#xd;
+    },&#xd;
+&quot;cod&quot;:&#xd;
+   {&#xd;
+      &quot;amount&quot;:400,&#xd;
+      &quot;currency&quot;:&quot;EUR&quot;&#xd;
+    },&#xd;
+    &#xd;
+    &quot;weight&quot;:&#xd;
+   {&#xd;
+      &quot;weightInIntegerRepresentation&quot;:100000,&#xd;
+      &quot;unit&quot;:&quot;g&quot;&#xd;
+   },&#xd;
+   &quot;sender&quot;:&#xd;
+   {&#xd;
+      &quot;company&quot;:&quot;Firma&quot;,&#xd;
+      &quot;name1&quot;:&quot;Brodos AG&quot;,&#xd;
+      &quot;street&quot;:&quot;Erlanger Str.&quot;,&#xd;
+      &quot;country&quot;:&quot;Deutschland&quot;,&#xd;
+      &quot;isoCountryCode&quot;:&quot;DEU&quot;,&#xd;
+      &quot;postalCode&quot;:&quot;91083&quot;,&#xd;
+      &quot;city&quot;:&quot;Baiersdorf&quot;,&#xd;
+      &quot;houseNo&quot;:&quot;9-13&quot;,&#xd;
+      &quot;phoneNo&quot;:&quot;09133/7770-0&quot;,&#xd;
+      &quot;email&quot;:&quot;info@my-extra.com&quot;&#xd;
+   },&#xd;
+   &quot;recipient&quot;:&#xd;
+   {&#xd;
+      &quot;company&quot;:&quot;trans-o-flex IT Service GmbH &quot;,&#xd;
+      &quot;name1&quot;:&quot;/Ralf&quot;,&#xd;
+      &quot;name2&quot;:&quot;Dechant&quot;,&#xd;
+      &quot;street&quot;:&quot;Adolph-Kolping-Str.&quot;,&#xd;
+      &quot;country&quot;:&quot;Deutschland&quot;,&#xd;
+      &quot;isoCountryCode&quot;:&quot;DE&quot;,&#xd;
+      &quot;postalCode&quot;:&quot;85356&quot;,&#xd;
+      &quot;city&quot;:&quot;Freising&quot;,&#xd;
+      &quot;houseNo&quot;:&quot;10&quot;,&#xd;
+      &quot;phoneNo&quot;:&quot;08161985223&quot;,&#xd;
+      &quot;email&quot;:&quot;ralf.dechant@tof.de&quot;&#xd;
+   }, &#xd;
+   &quot;labelSettings&quot;: {&#xd;
+        &quot;qrcodeDPI&quot;: 0,&#xd;
+        &quot;barcodeDPI&quot;: 0,&#xd;
+        &quot;labelWidth&quot;: 0,&#xd;
+        &quot;labelRotation&quot;: 0,&#xd;
+        &quot;labelHeight&quot;: 0&#xd;
+    }&#xd;
+}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">172.31.100.69</stringProp>
+          <stringProp name="HTTPSampler.port">8181</stringProp>
+          <stringProp name="HTTPSampler.protocol">http</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">addresslabelgenerator/v2/addresslabel/</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Content-Type</stringProp>
+                <stringProp name="Header.value">application/json</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+          <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
+            <boolProp name="ResultCollector.error_logging">false</boolProp>
+            <objProp>
+              <name>saveConfig</name>
+              <value class="SampleSaveConfiguration">
+                <time>true</time>
+                <latency>true</latency>
+                <timestamp>true</timestamp>
+                <success>true</success>
+                <label>true</label>
+                <code>true</code>
+                <message>true</message>
+                <threadName>true</threadName>
+                <dataType>true</dataType>
+                <encoding>false</encoding>
+                <assertions>true</assertions>
+                <subresults>true</subresults>
+                <responseData>false</responseData>
+                <samplerData>false</samplerData>
+                <xml>false</xml>
+                <fieldNames>true</fieldNames>
+                <responseHeaders>false</responseHeaders>
+                <requestHeaders>false</requestHeaders>
+                <responseDataOnError>false</responseDataOnError>
+                <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+                <assertionsResultsToSave>0</assertionsResultsToSave>
+                <bytes>true</bytes>
+                <sentBytes>true</sentBytes>
+                <threadCounts>true</threadCounts>
+                <idleTime>true</idleTime>
+                <connectTime>true</connectTime>
+              </value>
+            </objProp>
+            <stringProp name="filename"></stringProp>
+          </ResultCollector>
+          <hashTree/>
+          <ResultCollector guiclass="StatVisualizer" testclass="ResultCollector" testname="Aggregate Report" enabled="true">
+            <boolProp name="ResultCollector.error_logging">false</boolProp>
+            <objProp>
+              <name>saveConfig</name>
+              <value class="SampleSaveConfiguration">
+                <time>true</time>
+                <latency>true</latency>
+                <timestamp>true</timestamp>
+                <success>true</success>
+                <label>true</label>
+                <code>true</code>
+                <message>true</message>
+                <threadName>true</threadName>
+                <dataType>true</dataType>
+                <encoding>false</encoding>
+                <assertions>true</assertions>
+                <subresults>true</subresults>
+                <responseData>false</responseData>
+                <samplerData>false</samplerData>
+                <xml>false</xml>
+                <fieldNames>true</fieldNames>
+                <responseHeaders>false</responseHeaders>
+                <requestHeaders>false</requestHeaders>
+                <responseDataOnError>false</responseDataOnError>
+                <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+                <assertionsResultsToSave>0</assertionsResultsToSave>
+                <bytes>true</bytes>
+                <sentBytes>true</sentBytes>
+                <threadCounts>true</threadCounts>
+                <idleTime>true</idleTime>
+                <connectTime>true</connectTime>
+              </value>
+            </objProp>
+            <stringProp name="filename"></stringProp>
+          </ResultCollector>
+          <hashTree/>
+        </hashTree>
+      </hashTree>
+    </hashTree>
+  </hashTree>
+</jmeterTestPlan>

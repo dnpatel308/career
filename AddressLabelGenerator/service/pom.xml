@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.brodos.alg</groupId>
+        <artifactId>AddressLabelGenerator</artifactId>
+        <version>1.6.5</version>
+    </parent>
+
+    <artifactId>AddressLabelGenerator-service</artifactId>
+    <packaging>bundle</packaging>
+    <name>AddressLabelGenerator :: Service Layer</name>
+    <description>AddressLabelGenerator :: Service</description>
+
+    <url>http://www.brodos.de</url>
+
+    <properties>
+        <scanPath>com.brodos.alg.service</scanPath>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>AddressLabelGenerator-core</artifactId>
+            <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.brodos</groupId>
+                    <artifactId>commons-events</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>        
+
+        <!-- logging -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.brodos.commons</groupId>
+            <artifactId>commons-domain</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.brodos.commons</groupId>
+            <artifactId>commons-hystrix</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.cxf</groupId>
+            <artifactId>cxf-rt-rs-client</artifactId>
+            <version>${cxf.version}</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>net.engio</groupId>
+            <artifactId>mbassador</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.aries.blueprint</groupId>
+            <artifactId>blueprint-maven-plugin-annotation</artifactId>
+            <version>1.3.0</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>activemq-osgi</artifactId>
+            <version>5.14.5</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.brodos.example.jmstest</groupId>
+            <artifactId>jmsSimulator-events</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <defaultGoal>install</defaultGoal>
+    </build>
+
+</project>

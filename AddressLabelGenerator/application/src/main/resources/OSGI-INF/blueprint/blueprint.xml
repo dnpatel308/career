@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camel="http://camel.apache.org/schema/blueprint"
+	xmlns:jaxrs="http://cxf.apache.org/blueprint/jaxrs" xmlns:jpa="http://aries.apache.org/xmlns/jpa/v1.1.0"
+	xmlns:cxf="http://cxf.apache.org/blueprint/core" xmlns:tx="http://aries.apache.org/xmlns/transactions/v1.2.0"
+
+	xsi:schemaLocation="
+       http://www.osgi.org/xmlns/blueprint/v1.0.0 https://osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
+       http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint.xsd
+       http://cxf.apache.org/blueprint/jaxrs http://cxf.apache.org/schemas/blueprint/jaxrs.xsd
+       http://aries.apache.org/xmlns/jpa/v1.1.0 http://aries.apache.org/schemas/jpa/jpa_110.xsd
+       http://cxf.apache.org/blueprint/core http://cxf.apache.org/schemas/blueprint/core.xsd">
+
+	<jaxrs:server id="testResource" address="/">
+		<jaxrs:serviceBeans>
+			<ref component-id="addressLabelResource" />
+			<ref component-id="addressLabelResourcev1" />
+			<ref component-id="addressLabelResourcev2" />
+			<ref component-id="healthCheck" />
+		</jaxrs:serviceBeans>
+		<jaxrs:features>
+			<ref component-id="validationFeature" />
+		</jaxrs:features>
+		<jaxrs:providers>
+			<ref component-id="authFilter" />
+			<bean class="com.brodos.alg.application.filter.ALGExceptionMapper" />
+			<!--<bean class="com.brodos.alg.application.filter.SuccessResponseFilter" 
+				/> -->
+			<bean class="com.brodos.alg.application.ValidationExceptionMapper" />
+			<bean class="com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider" />
+		</jaxrs:providers>
+		<jaxrs:invoker>
+			<bean class="com.brodos.commons.hystrix.cxf.HystrixContextInvoker" />
+		</jaxrs:invoker>
+	</jaxrs:server>
+
+	<jaxrs:server id="tofResource" address="/tof">
+		<jaxrs:serviceBeans>
+			<ref component-id="tofOperationResource" />
+		</jaxrs:serviceBeans>
+		<jaxrs:features>
+			<ref component-id="validationFeature" />
+		</jaxrs:features>
+		<jaxrs:providers>
+			<!-- <ref component-id="authFilter" /> -->
+			<bean class="com.brodos.alg.application.filter.ALGExceptionMapper" />
+			<!-- <bean class="com.brodos.alg.application.filter.SuccessResponseFilter" /> -->
+			<bean class="com.brodos.alg.application.ValidationExceptionMapper" />
+			<bean class="com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider" />
+		</jaxrs:providers>
+		<jaxrs:invoker>
+			<bean class="com.brodos.commons.hystrix.cxf.HystrixContextInvoker" />
+		</jaxrs:invoker>
+	</jaxrs:server>
+	<bean id="validationFeature" class="com.brodos.commons.jaxrs.features.BeanValidationFeature" />
+	<bean id="authFilter"
+		class="com.brodos.security.isaac.jaas.filter.JaxRsAuthenticationFilter" />
+
+	<!-- force delay until proxy comes up -->
+	<reference
+		interface="com.brodos.security.isaac.domain.auth.AuthTokenUserDataExtractor"
+		availability="mandatory" />
+
+</blueprint>

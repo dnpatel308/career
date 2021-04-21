@@ -1,0 +1,74 @@
+{
+  "id": "/stock-projects/imei-ece",
+  "backoffFactor": 1.15,
+  "backoffSeconds": 1,
+  "container": {
+    "portMappings": [
+      {
+        "containerPort": 80,
+        "hostPort": 0,
+        "labels": {
+          "VIP_0": "/stock-projects/imei-ece/:80"
+        },
+        "protocol": "tcp",  
+        "name": "vuejs"
+      }
+    ],
+    "type": "DOCKER",
+    "volumes": [],
+    "docker": {      
+      "forcePullImage": false,
+      "privileged": false,
+      "parameters": [
+        {
+          "key": "log-opt",
+          "value": "gelf-address=udp://de-bai1-gelf:12201"
+        },
+        {
+          "key": "log-opt",
+          "value": "tag=imei-ece-production"
+        },
+        {
+          "key": "log-driver",
+          "value": "gelf"
+        }
+      ]
+    }
+  },
+  "cpus": 1,
+  "disk": 0,
+  "healthChecks": [
+    {
+      "gracePeriodSeconds": 300,
+      "intervalSeconds": 60,
+      "maxConsecutiveFailures": 3,
+      "timeoutSeconds": 20,
+      "delaySeconds": 15,
+      "protocol": "COMMAND",
+      "command": {
+        "value": "curl -f http://localhost/index.html"
+      }
+    }
+  ],
+  "instances": 1,
+  "maxLaunchDelaySeconds": 3600,
+  "mem": 768,
+  "gpus": 0,
+  "networks": [
+    {
+      "name": "dcos",
+      "mode": "container"
+    }
+  ],
+  "requirePorts": false,
+  "upgradeStrategy": {
+    "maximumOverCapacity": 1,
+    "minimumHealthCapacity": 1
+  },
+  "killSelection": "YOUNGEST_FIRST",
+  "unreachableStrategy": {
+    "inactiveAfterSeconds": 0,
+    "expungeAfterSeconds": 0
+  },
+  "constraints": []
+}

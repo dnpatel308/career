@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<emailtemplate xmlns="http://brodos.net/schemas/EmailTemplate/2008/01">
+<theme>${theme}</theme>
+<template>${template}</template>
+<language>${language}</language>
+<mapping>
+	<property name="articlename">${articlename}</property>
+	<property name="imei">${imeinumber}</property>
+	<property name="producer">${producer}</property>
+	<property name="EAN">${ean}</property>
+	<property name="articleno">${articlenumber}</property>
+	<property name="ticketid">${ticketid}</property>
+</mapping>
+<email>
+	<to>${toemailaddress}</to>
+</email>
+</emailtemplate>

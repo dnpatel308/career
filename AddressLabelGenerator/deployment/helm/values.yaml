@@ -1,0 +1,114 @@
+# Default values for ..
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+ciEnvironmentSlug: ""
+
+annotations:
+  prometheus.io/port: "80"
+  prometheus.io/scrape: "true"
+  prometheus.io/path: "/metrics"
+  BRODOS-TEAM: "StockTeam"
+  BRODOS-VCS: "https://gitlab.brodos.net/AddressLabelGenerator/AddressLabelGenerator"
+  BRODOS-COSTUNIT: 144130
+  BRODOS-PROJECTNO: PROJEKTNO-4
+#  traefik.http.routers.addresslabelgenerator-staging-http.rule: "addresslabelgenerator-staging.brodos.net"
+#  traefik.http.routers.addresslabelgenerator-staging-https.middlewares: "ipwhitelist-brodos-company@file"
+#  traefik.http.routers.addresslabelgenerator-staging-http.middlewares: "ipwhitelist-brodos-company@file"
+#  traefik.http.routers.addresslabelgenerator-staging-https.entrypoints: "https"
+#  traefik.http.routers.addresslabelgenerator-staging-https.tls: "true"
+#  traefik.http.routers.addresslabelgenerator-staging-http.entrypoints: "http"
+#  traefik.enable: "true"
+#  traefik.http.routers.addresslabelgenerator-staging-https.rule: "addresslabelgenerator-staging.brodos.net"
+
+  
+
+image:
+  repository: gitlab-registry.brodos.net/addresslabelgenerator/addresslabelgenerator
+  tag: ""
+  pullPolicy: IfNotPresent
+
+app:
+  port: 8181
+  livenessProbe: /addresslabelgenerator/health
+  readinessProbe: /addresslabelgenerator/health
+
+imagePullSecrets: 
+  - name: regcred
+#nameOverride: ""
+#fullnameOverride: ""
+
+env:
+  PPU_PARAM: null
+  JAVA_TOOL_OPTIONS: null
+  DATABASE_URL: null
+  DATASOURCE_NAME: null
+  DATABASE_NAME: null
+  DATABASE_PASSWORD: null
+  ROUTINGCODE_GS1_API: null
+  ROUTINGCODE_API: null
+  APP_EXCLUDE_VALIDATION_DHL: null
+  PPU_LOGIN_URL: null
+  DATABASE_USER: null
+  APP_EXCLUDE_VALIDATION_TOF: null
+  PPU_API: null
+  APP_DHL_CLIENTS: null 
+  KUSHAL: null
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: false
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name:
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: project.brodos.net
+      paths: []
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+ingressTraefik:
+    enabled: true
+    host: null
+    middlewares:
+      - redirectscheme-to-https@file
+  
+
+resources: 
+   limits:
+     cpu: 500m
+     memory: 1024Mi
+   requests:
+     cpu: 250m
+     memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

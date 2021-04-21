@@ -1,0 +1,5 @@
+TestSuite;TestCase;Active;URL;Method;Headers;Body;StatusCode;Accept;AssertionMethod;AssertionArgs
+Reservation Common File;Reservation with blank request body;TRUE;$DEVICE_RESERVATION_BASE_URL/v1/device-reservation/reservations;POST;;{};400;application/json;assertEquals(java.lang.Object,java.lang.Object);Article number is mandatory@.message
+Reservation Common File;Reservation using non existing article ;TRUE;$DEVICE_RESERVATION_BASE_URL/v1/device-reservation/reservations;POST;;"{""articleno"": ""DHAVAL308""}";404;application/json;assertEquals(java.lang.Object,java.lang.Object);Article not found.@.message
+Reservation Common File;Reservation without body;TRUE;$DEVICE_RESERVATION_BASE_URL/v1/device-reservation/reservations;POST;;;400;application/json;;
+GetDeviceReservationById Common File;GetDeviceReservationByIdNotFound;TRUE;$DEVICE_RESERVATION_BASE_URL/v1/device-reservation/reservations/03054568645422153;GET;;;404;application/json;assertEquals(java.lang.Object,java.lang.Object);Device reservation not found.@.message

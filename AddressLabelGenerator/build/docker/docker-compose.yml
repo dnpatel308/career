@@ -1,0 +1,81 @@
+version: '2'
+networks:
+    app_net:
+        driver: bridge
+        ipam:
+            driver: default
+            config:
+            -
+                subnet: 172.125.0.1/24
+services:
+    jms-server:
+        image: rmohr/activemq:5.14.5-alpine
+        ports:
+            - "8161:8161"
+            - "61616:61616"
+        networks:
+            - app_net
+        environment:
+            - ACTIVEMQ_ADMIN_LOGIN=admin
+            - ACTIVEMQ_ADMIN_PASSWORD=admin
+# local isaac instance
+#    isaac-service-8182:
+#        image: "brodos/isaac:3.1.0-SNAPSHOT"
+#        ports:
+#            - "8182:8181"
+#        command: /srv/isaac/bin/isaac run
+#        networks:
+#            - app_net
+#        environment:
+#            - TERM=xterm
+#            - DATABASE_HOST=172.17.42.50
+#            - DATABASE_PORT=3309
+#            - DATABASE_NAME=bam
+#            - DATABASE_PASSWORD=bam
+#            - DATABASE_USER=bam
+#            - JMS_URL=tcp://jms-server:61616
+#            - JMS_VIRTUAL_QUEUE=Consumer.Dev.VirtualTopic.IsaacTso
+#            - BAM_SERVICE_WSDL=http://asbolus.brodos.net:38080/bam/Login?wsdl
+#            - TOKEN_CRYPTKEY=7d36cf37c98fe93524d14d2076d2728468b3e70c7cc16d162020942bd3a270f1
+    context-service1:
+        image: "brodos/${imageName}:${version}"
+        networks:
+            - app_net
+        build:
+            context: .
+            args:
+                - ASSEMBLY=${finalName}
+        ports:
+            - "8185:8181"
+            - "5006:5005"
+        environment:
+            - TERM=xterm
+            - DATABASE_URL=jdbc:mariadb://172.17.42.50:3309/test?characterEncoding=UTF-8
+            - DATABASE_NAME=test
+            - DATABASE_USER=test
+            - DATABASE_PASSWORD=test
+            - JMS_URL=tcp://jms-server:61616
+            - JMS_VIRTUAL_QUEUE=Consumer.AddressLabelGenerator.VirtualTopic.JmsTest
+            - ISAAC_BASE_URL=http://isaac-tso.brodos.net
+            - LOGIN_PROXY_URL=http://context.brodosdev.net:8185/alg/isaac/login
+            - LOGIN_PAGE_URL=http://context.brodosdev.net:8185/login
+        command: /srv/karaf/bin/${scriptname} run debug
+    context-service2:
+        image: "brodos/${imageName}:1.0.0-SNAPSHOT"
+        networks:
+            - app_net
+        ports:
+            - "8186:8181"
+            - "5007:5005"
+        environment:
+            - TERM=xterm
+            - DATABASE_URL=jdbc:mariadb://172.17.42.50:3309/test?characterEncoding=UTF-8
+            - DATABASE_NAME=test
+            - DATABASE_USER=test
+            - DATABASE_PASSWORD=test
+            - JMS_URL=tcp://jms-server:61616
+            - JMS_VIRTUAL_QUEUE=Consumer.AddressLabelGenerator.VirtualTopic.JmsTest
+            - ISAAC_BASE_URL=http://isaac-tso.brodos.net
+            - LOGIN_PROXY_URL=http://context.brodosdev.net:8186/alg/isaac/login
+            - LOGIN_PAGE_URL=http://context.brodosdev.net:8186/login
+        command: /srv/karaf/bin/${scriptname} run debug

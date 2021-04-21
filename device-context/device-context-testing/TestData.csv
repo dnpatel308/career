@@ -1,0 +1,2 @@
+TestSuite;TestCase;Active;URL;Method;Headers;Body;StatusCode;Accept;AssertionMethod;AssertionArgs;TestLinkSettings
+Device context;Health check;TRUE;$DEVICE_CONTEXT_BASE_URL/health;GET;;{};200;application/json;assertEquals(java.lang.Object,java.lang.Object);true@.isSuccessful;

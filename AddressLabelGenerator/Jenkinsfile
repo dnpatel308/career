@@ -1,0 +1,329 @@
+pipeline {
+    environment {
+        SLACK_CHANNEL = '#stock-jenkins-alerts'
+        DOCKER_REPOSITORY = 'addresslabelgenerator/addresslabelgenerator'        
+        DCOS_ID_STAGING = 'stock-addresslabel-generator/staging'
+        DCOS_ID_PRODUCTION_DE_OTC_EU_LT_1 = 'stock-projects/addresslabelgenerator'
+        SOAPUI_RUNNER = "/opt/SmartBear/SoapUI-5.5.0/bin/testrunner.sh"
+    }
+    agent any 
+    tools {
+        maven 'apache-maven-3.3.9'
+    }					
+    
+    stages {
+        stage('SCM') {
+            steps {     
+                slackSend channel: "${SLACK_CHANNEL}", color: 'good', message: "${env.JOB_NAME} - ${env.BUILD_NUMBER} Started (<${env.BUILD_URL}|Open>)"			
+                checkout([$class: 'GitSCM', branches: [[name: "${env.GIT_BRANCH}"]], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'CleanBeforeCheckout']], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'deployment', url: 'git@gitlab.brodos.net:AddressLabelGenerator/AddressLabelGenerator.git']]])
+                checkout([$class: 'GitSCM', branches: [[name: 'master']], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'soapui']], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'deployment', url: 'git@gitlab.brodos.net:wms/soap-ui.git']]])
+
+            }
+        }
+        stage('Prepare & Build') {
+            steps {                 
+                sh 'mvn clean install'
+                sh 'cp -r assembly/target/*.tar.gz .'                
+                script {
+
+              env.PROP_FILE = readFile "${env.WORKSPACE}/assembly/target/classes/project.properties"
+              env.PROJECT_VERSION = sh(returnStdout: true, script: "cat  ${env.WORKSPACE}/assembly/target/classes/project.properties | grep version | cut -d'=' -f2").trim()
+              env.ASSEMBLY = sh(returnStdout: true, script: "cat  ${env.WORKSPACE}/assembly/target/classes/project.properties | grep finalName | cut -d'=' -f2").trim()
+             }                     
+                sh 'docker build --build-arg ASSEMBLY="${ASSEMBLY}" -q --tag="${DOCKER_REPOSITORY}":"${PROJECT_VERSION}"-"${BUILD_NUMBER}" -f docker/Dockerfile .'
+          }
+        }
+    stage('Code Tests') {
+            parallel {
+                stage('Sonar') {
+                    environment { 
+                        scannerHome = tool('sonarqube-2.8');
+                    }
+                    steps {
+                            withSonarQubeEnv('hephaistos1') {
+                                sh 'mvn sonar:sonar'
+                            }
+                        }
+                    }                                        
+            }
+        }
+        stage('Publish Artifacts') {
+            parallel {
+                stage('Snapshot') {
+                    when {
+                      not {
+                         anyOf { 
+                            expression {
+                                return "${BRANCH_NAME}" =~ 'Branch_\\d+\\.\\d+'
+                                 }                
+                            tag pattern: "\\d+\\.\\d+\\.\\d+", comparator: "REGEXP"  
+                        }
+                       }
+                    }
+                    environment {
+                        DOCKER_REPOSITORY_URL = 'gitlab-registry.brodos.net'
+                    }                    
+                    steps {
+                        sh '''mvn versions:set -DnewVersion="${PROJECT_VERSION}"
+                        mvn jar:jar deploy:deploy -DrepositoryId=artifactory-snapshot -f application/pom.xml
+                        mvn jar:jar deploy:deploy -DrepositoryId=artifactory-snapshot -f core/pom.xml
+                        mvn jar:jar deploy:deploy -DrepositoryId=artifactory-snapshot -f dhl/pom.xml
+                        mvn jar:jar deploy:deploy -DrepositoryId=artifactory-snapshot -f infrastructure/pom.xml
+                        mvn jar:jar deploy:deploy -DrepositoryId=artifactory-snapshot -f service/pom.xml                        
+                        mvn jar:jar deploy:deploy -DrepositoryId=artifactory-snapshot -f tof/pom.xml
+                        mvn deploy:deploy-file -Dfile=features/target/feature/feature.xml -DrepositoryId=artifactory-snapshots -Durl=https://brodos.jfrog.io/brodos/libs-snapshots-local -DartifactId=AddressLabelGenerator-features -DgroupId=com.brodos.karaf.features -Dclassifier=features -Dversion="${PROJECT_VERSION}" -Dtype=xml'''
+                        sh 'docker tag ${DOCKER_REPOSITORY}:${PROJECT_VERSION}-${BUILD_NUMBER} ${DOCKER_REPOSITORY_URL}/${DOCKER_REPOSITORY}:latest'
+                        sh 'docker tag ${DOCKER_REPOSITORY}:${PROJECT_VERSION}-${BUILD_NUMBER} ${DOCKER_REPOSITORY_URL}/${DOCKER_REPOSITORY}:${PROJECT_VERSION}-${BUILD_NUMBER}'
+                        sh 'docker push ${DOCKER_REPOSITORY_URL}/${DOCKER_REPOSITORY}:${PROJECT_VERSION}-${BUILD_NUMBER}'
+                        sh 'docker push ${DOCKER_REPOSITORY_URL}/${DOCKER_REPOSITORY}:latest'
+                        sh 'echo "${DOCKER_REPOSITORY_URL}/${DOCKER_REPOSITORY}:${PROJECT_VERSION}-${BUILD_NUMBER} docker/Dockerfile" > anchore_images'
+                        archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
+                    }
+                }
+                stage('Release') {
+                    when {                      
+                         anyOf { 
+                            expression {
+                                return "${BRANCH_NAME}" =~ 'Branch_\\d+\\.\\d+'
+                                 }                
+                            tag pattern: "\\d+\\.\\d+\\.\\d+", comparator: "REGEXP"  
+                        }                       
+                    }
+                    environment {
+                        DOCKER_REPOSITORY_URL = 'gitlab-registry.brodos.net'
+                    }                    
+                    steps {
+                        sh '''mvn versions:set -DnewVersion="${PROJECT_VERSION}"
+                        mvn jar:jar deploy:deploy -DrepositoryId=artifactory-releases -f application/pom.xml
+                        mvn jar:jar deploy:deploy -DrepositoryId=artifactory-releases -f core/pom.xml
+                        mvn jar:jar deploy:deploy -DrepositoryId=artifactory-releases -f dhl/pom.xml
+                        mvn jar:jar deploy:deploy -DrepositoryId=artifactory-releases -f infrastructure/pom.xml
+                        mvn jar:jar deploy:deploy -DrepositoryId=artifactory-releases -f service/pom.xml                        
+                        mvn jar:jar deploy:deploy -DrepositoryId=artifactory-releases -f tof/pom.xml
+                        mvn deploy:deploy-file -Dfile=features/target/feature/feature.xml -DrepositoryId=artifactory-releases -Durl=https://brodos.jfrog.io/brodos/libs-snapshots-local -DartifactId=AddressLabelGenerator-features -DgroupId=com.brodos.karaf.features -Dclassifier=features -Dversion="${PROJECT_VERSION}" -Dtype=xml'''
+                        sh 'docker tag ${DOCKER_REPOSITORY}:${PROJECT_VERSION}-${BUILD_NUMBER} ${DOCKER_REPOSITORY_URL}/${DOCKER_REPOSITORY}:latest'
+                        sh 'docker tag ${DOCKER_REPOSITORY}:${PROJECT_VERSION}-${BUILD_NUMBER} ${DOCKER_REPOSITORY_URL}/${DOCKER_REPOSITORY}:${PROJECT_VERSION}-${BUILD_NUMBER}'
+                        sh 'docker push ${DOCKER_REPOSITORY_URL}/${DOCKER_REPOSITORY}:${PROJECT_VERSION}-${BUILD_NUMBER}'
+                        sh 'docker push ${DOCKER_REPOSITORY_URL}/${DOCKER_REPOSITORY}:latest'
+                        sh 'echo "${DOCKER_REPOSITORY_URL}/${DOCKER_REPOSITORY}:${PROJECT_VERSION}-${BUILD_NUMBER} docker/Dockerfile" > anchore_images'
+                        archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
+                    } 
+                }
+            }
+        }
+        stage('Deployment') {
+            parallel {
+                stage('Staging') {
+                   when {                                               
+                            expression {
+                                return "${BRANCH_NAME}" =~ 'Branch_\\d+\\.\\d+'
+                                 }                                            
+                    }
+                    environment {
+                        DOCKER_REPOSITORY_URL = 'gitlab-registry.brodos.net'
+                        STAGING_URL = 'https://addresslabelgenerator-staging.brodos.net'
+                    }
+                    steps {
+                        slackSend channel: "${SLACK_CHANNEL}", color: 'good', message: "${env.JOB_NAME} - ${env.BUILD_NUMBER} Starting Deployment (<${env.BUILD_URL}|Open>)"
+                        sh 'dcos cluster attach de-bai1'
+                        withCredentials([usernamePassword(credentialsId: 'ALGDBSTAGING_CRED', passwordVariable: 'ALGDBSTAGING_PASSWORD', usernameVariable: 'ALGDBSTAGING_USER')]) {
+                        marathon(
+                                credentialsId: 'dcos',
+                                docker: '${DOCKER_REPOSITORY_URL}/${DOCKER_REPOSITORY}:${PROJECT_VERSION}-${BUILD_NUMBER}',
+                                dockerForcePull: true,
+                                env: [                                    
+                                    [name: 'JAVA_TOOL_OPTIONS', value: '-XX:ParallelGCThreads=2 -XX:CICompilerCount=2'],
+                                    [name: 'DATABASE_URL', value: 'jdbc:mysql://stock-stagingstock-haproxy.marathon.l4lb.thisdcos.directory:3306/alg?characterEncoding=UTF-8'],
+                                    [name: 'DATASOURCE_NAME', value: 'alg'],                                    
+                                    [name: 'DATABASE_NAME', value: 'alg'],                                    
+                                    [name: 'DATABASE_PASSWORD', value: '$ALGDBSTAGING_PASSWORD'],
+                                    [name: 'ROUTINGCODE_API', value: 'http://asbolus.brodosdmz.net:38080/dhl/rest/routingcode/'],
+                                    [name: 'APP_EXCLUDE_VALIDATION_DHL', value: 'freightForwarder.customProperties.billingNo|freightForwarder.customProperties.deliveryDate|freightForwarder.customProperties.deliveryTimeRangeIdentifier|freightForwarder.customProperties.namedPersonOnly|freightForwarder.customProperties.referenceNo|freightForwarder.customProperties.shipmentReferenceNumber|sender.houseNo|recipient.houseNo'],
+                                    [name: 'PPU_LOGIN_URL', value: 'https://tajet1.brodos.net:8443/cxf/cashdesk/CashdeskService/login'],
+                                    [name: 'DATABASE_USER', value: 'alg'],
+                                    [name: 'APP_EXCLUDE_VALIDATION_TOF', value: 'cod.amount|cod.currency|freight.amountInLowestDenomination|freight.currency|freightForwarder.customProperties.collectionType|freightForwarder.customProperties.freeuse|freightForwarder.customProperties.noOfCompletePalletes|recipient.email|sender.email|sender.houseNo|recipient.houseNo'],
+                                    [name: 'PPU_API', value: 'https://ppugateway.brodos.net/api/v1/ppu'],
+                                    [name: 'PPU_PARAM', value: '990'],
+                                    [name: 'ROUTINGCODE_GS1_API', value: 'https://algroutingcode-staging.brodos.net/dhl/v1/routingcode'],
+                                    [name: 'APP_DHL_CLIENTS', value: 'BLM|MEDION1|TELEKOM1']                                    
+                                ],
+                                filename: 'docker/marathon-staging.json',
+                                forceUpdate: true,
+                                id: '${DCOS_ID_STAGING}',
+                                labels: [[name: 'BRODOS-TEAM', value: 'Stock Team'],
+                                         [name: 'BRODOS-VCS', value: 'https://gitlab.brodos.net/AddressLabelGenerator/AddressLabelGenerator'],
+                                         [name: 'BRODOS-COSTUNIT', value: '144130'],
+                                         [name: 'BRODOS-PROJECTNO', value: 'PROJEKTNO-4'],
+                                         [name: 'traefik.enable', value: 'true'],
+                                         [name: 'traefik.http.routers.addresslabelgenerator-staging-http.rule', value: 'Host(`addresslabelgenerator-staging.brodos.net`)'],	
+										 [name: 'traefik.http.routers.addresslabelgenerator-staging-https.middlewares', value: 'ipwhitelist-brodos-company@file'],
+										 [name: 'traefik.http.routers.addresslabelgenerator-staging-http.middlewares', value: 'ipwhitelist-brodos-company@file'],
+										 [name: 'traefik.http.routers.addresslabelgenerator-staging-https.entrypoints', value: 'https'],
+										 [name: 'traefik.http.routers.addresslabelgenerator-staging-https.tls', value: 'true'],
+										 [name: 'traefik.http.routers.addresslabelgenerator-staging-http.entrypoints', value: 'http'],
+										 [name: 'traefik.http.routers.addresslabelgenerator-staging-https.rule', value: 'Host(`addresslabelgenerator-staging.brodos.net`)']
+                                        ],
+                                uris: [[uri: 'file:///etc/docker.tar.gz']],
+                                url: 'http://magi.brodosdmz.net:8080/'
+                        )
+                        }
+                         
+                        sh returnStatus: true, script: '''GROUP="/${DCOS_ID_STAGING}"
+                                                        i="0"
+                                                        expect="1"
+                                                        echo "--- Waiting for deployment to finish ---"
+                                                        while [ $i -lt $expect ]
+                                                        do
+                                                            i=`dcos marathon app list | grep ${GROUP} | tr -s \' \' | cut -d" " -f 6 | grep \'\\-\\-\\-\' | wc -l`
+                                                        done'''
+
+                     dir('soapui') {                                                            
+                                    dir('ALG_SoapUI') {
+                                        script {
+                                try {								    
+                                    slackSend channel: "${SLACK_CHANNEL}", color: 'good', message: "SOAP UI TEST EXECUTION STARTED for DEFAULT API ${STAGING_URL}  !!"
+									sh "sed -i 's/reports/default-reports/g' ./build.properties"
+									sh "sed -i 's/staging/addresslabelgenerator-staging.brodos.net-Default-API/g' ./build.properties"
+                                    sh '''rm -rf ./default-reports ; mkdir ./default-reports
+                                    ${SOAPUI_RUNNER} -r -j -f\\\"./default-reports/.\\\" -P\\\"Endpoint=https://addresslabelgenerator-staging.brodos.net/\\\" -P\\\"routingCodeEndpoint=https://algroutingcode-staging.brodos.net\\\" -P\\\"DBConnectionString=jdbc:mysql://172.19.8.103:3306/algdhlroutingcode?user=algdhlroutingcode\\&password=DSrDXCjSyktmKv43\\\" -P\\\"Resource=/addresslabelgenerator/addresslabel\\\"  AddressLabelGenerator.xml'''                                    
+                                    sh '/usr/bin/ant'
+                                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: './default-reports/html/', reportFiles: 'index.html', reportName: 'ALG SOAPUI STAGING TEST REPORT DEFAULT API', reportTitles: ''])
+                                    slackSend channel: "${SLACK_CHANNEL}", color: 'good', message: "SOAP UI TEST EXECUTION FINISHED for DEFAULT API ${STAGING_URL}  !!"
+                                } catch (Exception e) {                                    
+                                    sh "sed -i 's/reports/default-reports/g' ./build.properties"
+									sh "sed -i 's/staging/addresslabelgenerator-staging.brodos.net-Default-API/g' ./build.properties"
+                                    sh '/usr/bin/ant'
+                                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: './default-reports/html/', reportFiles: 'index.html', reportName: 'ALG SOAPUI STAGING TEST REPORT DEFAULT API', reportTitles: ''])
+                                    slackSend channel: "${SLACK_CHANNEL}", color: 'danger', message: "SOAP UI TEST EXECUTION FAILED for DEFAULT API ${STAGING_URL}  !!"
+                                }
+                                 }			
+                                    }                                                            
+                        }
+
+                        dir('soapui') {                                                            
+                                    dir('ALG_SoapUI') {
+                                        script {
+                                try {								    
+                                    slackSend channel: "${SLACK_CHANNEL}", color: 'good', message: "SOAP UI TEST EXECUTION STARTED for V2 API ${STAGING_URL}  !!"
+									sh "sed -i 's/default/V2/g' ./build.properties"									
+                                    sh '''rm -rf ./V2-reports ; mkdir ./V2-reports
+                                    ${SOAPUI_RUNNER} -r -j -f\\\"./V2-reports/.\\\" -P\\\"Endpoint=https://addresslabelgenerator-staging.brodos.net/\\\" -P\\\"routingCodeEndpoint=https://algroutingcode-staging.brodos.net\\\" -P\\\"DBConnectionString=jdbc:mysql://172.19.8.103:3306/algdhlroutingcode?user=algdhlroutingcode\\&password=DSrDXCjSyktmKv43\\\" -P\\\"Resource=/addresslabelgenerator/v2/addresslabel\\\"  AddressLabelGenerator.xml'''                                    
+                                    sh '/usr/bin/ant'
+                                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: './V2-reports/html/', reportFiles: 'index.html', reportName: 'ALG SOAPUI STAGING TEST REPORT V2 API', reportTitles: ''])
+                                    slackSend channel: "${SLACK_CHANNEL}", color: 'good', message: "SOAP UI TEST EXECUTION FINISHED for V2 API ${STAGING_URL}  !!"
+                                } catch (Exception e) {                                    
+                                    sh "sed -i 's/default/V2/g' ./build.properties"									
+                                    sh '/usr/bin/ant'
+                                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: './V2-reports/html/', reportFiles: 'index.html', reportName: 'ALG SOAPUI STAGING TEST REPORT V2 API', reportTitles: ''])
+                                    slackSend channel: "${SLACK_CHANNEL}", color: 'danger', message: "SOAP UI TEST EXECUTION FAILED for V2 API ${STAGING_URL}  !!"
+                                }
+                                 }			
+                                    }                                                            
+                        }                          
+
+                    }
+                }                
+                stage('de-otc-eu-lt-1') {
+                    when {
+                        tag pattern: "\\d+\\.\\d+\\.\\d+", comparator: "REGEXP"
+                    }
+                    environment {
+                        DOCKER_REPOSITORY_URL = 'gitlab-registry.brodos.net'
+                    }
+                    steps {
+                        slackSend channel: "${SLACK_CHANNEL}", color: 'good', message: "${env.JOB_NAME} - ${env.BUILD_NUMBER} Starting Deployment (<${env.BUILD_URL}|Open>)"
+                        sh 'dcos cluster attach de-otc-eu-lt-1'
+						 withCredentials([usernamePassword(credentialsId: 'ALGDBOTC_CRED', passwordVariable: 'ALGDBOTC_CRED_PASSWORD', usernameVariable: 'ALGDBOTC_CRED_USER')]) {
+                        marathon(
+                                credentialsId: 'dcos-de-otc-eu-lt-1',
+                                docker: '${DOCKER_REPOSITORY_URL}/${DOCKER_REPOSITORY}:${PROJECT_VERSION}-${BUILD_NUMBER}',
+                                dockerForcePull: true,
+                                env: [
+                                    [name: 'JAVA_TOOL_OPTIONS', value: '-XX:ParallelGCThreads=2 -XX:CICompilerCount=2'],
+                                    [name: 'DATABASE_URL', value: 'jdbc:mysql://cathbad.de-otc-eu-lt-1.brodos.net:8635/algprod?characterEncoding=UTF-8'],
+                                    [name: 'DATASOURCE_NAME', value: 'alg'],                                    
+                                    [name: 'DATABASE_NAME', value: 'algprod'],                                    
+                                    [name: 'DATABASE_PASSWORD', value: '$ALGDBOTC_CRED_PASSWORD'],
+                                    [name: 'ROUTINGCODE_API', value: 'http://asbolus.brodos.net/dhl/rest/routingcode/'],
+                                    [name: 'APP_EXCLUDE_VALIDATION_DHL', value: 'freightForwarder.customProperties.billingNo|freightForwarder.customProperties.deliveryDate|freightForwarder.customProperties.deliveryTimeRangeIdentifier|freightForwarder.customProperties.namedPersonOnly|freightForwarder.customProperties.referenceNo|freightForwarder.customProperties.shipmentReferenceNumber|sender.houseNo|recipient.houseNo'],
+                                    [name: 'PPU_LOGIN_URL', value: 'https://tajet1.brodos.net:8443/cxf/cashdesk/CashdeskService/login'],
+                                    [name: 'DATABASE_USER', value: '$ALGDBOTC_CRED_USER'],
+                                    [name: 'APP_EXCLUDE_VALIDATION_TOF', value: 'cod.amount|cod.currency|freight.amountInLowestDenomination|freight.currency|freightForwarder.customProperties.collectionType|freightForwarder.customProperties.freeuse|freightForwarder.customProperties.noOfCompletePalletes|recipient.email|sender.email|sender.houseNo|recipient.houseNo'],
+                                    [name: 'PPU_API', value: 'https://ppugateway.brodos.net/api/v1/ppu'],
+                                    [name: 'PPU_PARAM', value: '60'],
+                                    [name: 'ROUTINGCODE_GS1_API', value: 'https://algroutingcodeapi.brodos.net/dhl/v1/routingcode'],
+                                    [name: 'APP_DHL_CLIENTS', value: 'BLM|MEDION1|TELEKOM1']
+                                ],
+                                filename: 'docker/marathon-de-otc-eu-lt-1.json',
+                                forceUpdate: true, 
+                                id: '${DCOS_ID_PRODUCTION_DE_OTC_EU_LT_1}',
+                                labels: [ [name: 'HAPROXY_GROUP', value: 'external'], 
+                                          [name: 'HAPROXY_0_VHOST', value: 'addresslabelgenerator.brodos.net'],
+                                          [name: 'BRODOS-TEAM', value: 'Stock Team'],
+                                          [name: 'BRODOS-VCS', value: 'https://gitlab.brodos.net/AddressLabelGenerator/AddressLabelGenerator'],
+                                          [name: 'BRODOS-COSTUNIT', value: '144130'],
+                                          [name: 'BRODOS-PROJECTNO', value: 'PROJEKTNO-4']                                       
+                                        ],
+                                uris: [[uri: 'file:///etc/docker.tar.gz']],
+                                url: 'http://casper.de-otc-eu-lt-1.brodos.net:8080/'
+                        )
+                        }
+                        sh returnStatus: true, script: '''GROUP="/${DCOS_ID_PRODUCTION_DE_OTC_EU_LT_1}"
+                                                        i="0"
+                                                        expect="1"
+                                                        echo "--- Waiting for deployment to finish ---"
+                                                        while [ $i -lt $expect ]
+                                                        do
+                                                            i=`dcos marathon app list | grep ${GROUP} | tr -s \' \' | cut -d" " -f 6 | grep \'\\-\\-\\-\' | wc -l`
+                                                        done'''
+                    }
+                }                
+            }
+        }
+        stage('Staging-LoadTesting'){
+            when {                                               
+                            expression {
+                                return "${BRANCH_NAME}" =~ 'Branch_\\d+\\.\\d+'
+                                 }                                            
+                    }
+            agent { label 'jmeter-docker-slave' }
+            steps {
+              withCredentials([usernamePassword(credentialsId: 'ALGDBSTAGING_CRED', passwordVariable: 'ALGDBSTAGING_PASSWORD', usernameVariable: 'ALGDBSTAGING_USER')]) {                 
+                dir('jmeter-alg') {
+
+                               sh 'apk update'
+                               sh 'apk add wget'
+                               sh 'wget https://repo1.maven.org/maven2/mysql/mysql-connector-java/5.1.48/mysql-connector-java-5.1.48.jar'
+                               sh 'cp -r mysql-connector-java-5.1.48.jar $JMETER_HOME/lib/.'
+                                        script {
+                                try {								    
+                                    slackSend channel: "${SLACK_CHANNEL}", color: 'good', message: "LOAD TEST EXECUTION STARTED for V2 API STAGING  !!"									
+                                    sh '''jmeter -n -t AddressLabelGeneration_DHLLoadTest.jmx -Jalg_url=addresslabelgenerator-staging.brodos.net -Jalg_proto=https -Jalg_path=addresslabelgenerator/v2/addresslabel/ -l addresslabelgenerator-dhlloadtests-staging.jtl'''
+									sh '''jmeter -n -t AddressLabelGenerationTrackingIDValidation.jmx -Jalg_url=addresslabelgenerator-staging.brodos.net -Jalg_proto=https -Jalg_path=addresslabelgenerator/v2/addresslabel/ -Jalg_db_url="jdbc:mysql://172.19.8.103:3306/alg" -Jalg_db_user=${ALGDBSTAGING_USER} -Jalg_db_pass=${ALGDBSTAGING_PASSWORD} -l addresslabelgenerator-trackingidvalidationloadtests-staging.jtl'''                    
+									perfReport filterRegex: '', sourceDataFiles: '**/*.jtl'
+                                    
+                                    slackSend channel: "${SLACK_CHANNEL}", color: 'good', message: "LOAD TEST EXECUTION FINISHED for V2 API STAGING  !!"
+                                } catch (Exception e) {                                    
+                                    perfReport filterRegex: '', sourceDataFiles: '**/*.jtl'
+                                    slackSend channel: "${SLACK_CHANNEL}", color: 'danger', message: "LOAD TEST EXECUTION FAILED for V2 API STAGING  !!"
+                                }
+                                 }			
+                     } 
+              }   
+          } 
+        }                                     
+    }
+    post {
+          success {
+               step([$class: 'WsCleanup'])
+               slackSend channel: "${SLACK_CHANNEL}", color: 'good', message: "${env.JOB_NAME} - ${env.BUILD_NUMBER} Finished (<${env.BUILD_URL}|Open>)"
+          }
+          always {
+            sh 'check=`docker images --format {{.ID}}:{{.Repository}} | grep ${DOCKER_REPOSITORY} | cut -d: -f1 | uniq | wc -l` ; if [ $check -ge "1" ]; then docker rmi -f `docker images --format {{.ID}}:{{.Repository}} | grep ${DOCKER_REPOSITORY} | cut -d: -f1 | uniq`; else exit 0; fi'
+          }          
+          failure {
+                slackSend channel: "${SLACK_CHANNEL}", color: 'danger', message: "${env.JOB_NAME} - ${env.BUILD_NUMBER} Failed (<${env.BUILD_URL}|Open>)"
+
+          }
+    }
+}

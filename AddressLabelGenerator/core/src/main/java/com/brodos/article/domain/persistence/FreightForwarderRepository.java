@@ -1,0 +1,21 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package com.brodos.article.domain.persistence;
+
+import com.brodos.alg.domain.entity.FreightForwarder;
+
+/**
+ *
+ * @author padhaval
+ */
+public interface FreightForwarderRepository {
+
+    public FreightForwarder store(FreightForwarder freightForwarder);
+
+    public FreightForwarder merge(FreightForwarder freightForwarder);
+
+    public FreightForwarder findByPk(String key);
+}

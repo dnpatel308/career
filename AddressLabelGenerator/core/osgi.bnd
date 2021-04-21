@@ -1,0 +1,13 @@
+Export-Package: \
+  com.brodos.alg.domain, \
+  com.brodos.alg.domain.util, \
+  com.brodos.alg.domain.entity, \
+  com.brodos.alg.domain.exception, \
+  com.brodos.article.domain.persistence, \
+  com.brodos.article.domain.service, \
+  com.brodos.alg.domain.event
+
+DynamicImport-Package: \
+    org.hibernate.proxy, \
+    javassist.util.proxy, \
+    *

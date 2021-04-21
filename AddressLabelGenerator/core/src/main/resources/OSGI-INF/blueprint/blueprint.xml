@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:camel="http://camel.apache.org/schema/blueprint"
+           xmlns:jaxrs="http://cxf.apache.org/blueprint/jaxrs"
+           xmlns:jpa="http://aries.apache.org/xmlns/jpa/v1.1.0"
+           xmlns:cxf="http://cxf.apache.org/blueprint/core"
+           xmlns:tx="http://aries.apache.org/xmlns/transactions/v1.2.0"
+
+           xsi:schemaLocation="
+       http://www.osgi.org/xmlns/blueprint/v1.0.0 https://osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
+       http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint.xsd
+       http://cxf.apache.org/blueprint/jaxrs http://cxf.apache.org/schemas/blueprint/jaxrs.xsd
+       http://aries.apache.org/xmlns/jpa/v1.1.0 http://aries.apache.org/schemas/jpa/jpa_110.xsd
+       http://cxf.apache.org/blueprint/core http://cxf.apache.org/schemas/blueprint/core.xsd">
+
+    <bean id="configuration"
+              class="com.brodos.commons.config.ConfigurationService"
+              init-method="init"
+              destroy-method="destroy">
+        <argument ref="blueprintBundleContext" />
+        <argument value="com.brodos.context" />
+    </bean>
+    <service interface="com.brodos.commons.config.Configuration"
+             ref="configuration">
+        <service-properties>
+            <entry key="pid" value="com.brodos.context" />
+        </service-properties>
+    </service>
+</blueprint>

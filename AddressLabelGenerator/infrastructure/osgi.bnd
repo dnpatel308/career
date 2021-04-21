@@ -1,0 +1,14 @@
+Meta-Persistence: \
+    META-INF/persistence.xml
+Import-Package: \
+    com.brodos.commons.liquibase, \
+    com.brodos.commons.event.entity
+Export-Package: \
+    com.brodos.alg.persistence.liquibase
+DynamicImport-Package: \
+    org.hibernate.proxy, \
+    javassist.util.proxy, \
+    *
+
+-removeheaders Import-Service, Export-Service, Require-Capability
+-dsannotations: *

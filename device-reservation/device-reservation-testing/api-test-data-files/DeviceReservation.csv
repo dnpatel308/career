@@ -1,0 +1,4 @@
+"TestSuite";"TestCase";"Active";"URLParameters";"Body";"StatusCode";"AssertionMethod";"AssertionArgs";"TestLinkSettings"
+"Reservation API File";"Reservation with blank request body";"TRUE";;"{}";400;"assertEquals(java.lang.Object,java.lang.Object)";"Article number is mandatory@.message";
+"Reservation API File";"Reservation using non existing article ";"TRUE";;"{""articleno"": ""DHAVAL308""}";404;"assertEquals(java.lang.Object,java.lang.Object)";"Article not found.@.message";
+"Reservation API File";"Reservation without body";"TRUE";;;415;;;

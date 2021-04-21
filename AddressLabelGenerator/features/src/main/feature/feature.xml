@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<features xmlns="http://karaf.apache.org/xmlns/features/v1.4.0" name="AddressLabelGenerator Features ${project.version}">
+
+    <repository>mvn:com.brodos.karaf.features/commons-features/${brodos-commons.version}/xml/features</repository>
+    <repository>mvn:org.apache.aries.jpa/jpa-features/2.6.1/xml/features</repository>
+    <repository>mvn:org.ops4j.pax.jdbc/pax-jdbc-features/1.1.0/xml/features</repository>
+    <repository>mvn:org.hibernate/hibernate-osgi/${hibernate.version}/xml/karaf</repository>
+    <repository>mvn:com.brodos.karaf.features/isaac/${isaac.version}/xml/features</repository>
+
+    <feature name="AddressLabelGenerator-application" description="Application layer" version="${project.version}">        
+        <feature>cxf-jaxrs</feature>
+        <feature>isaac-proxy</feature>
+        <feature>AddressLabelGenerator-service</feature>
+        <feature>hibernate-validator</feature>
+        <feature>cxf-bean-validation</feature>        
+        <bundle>mvn:com.brodos.commons/hibernate-validator-fragment/${hibernate-validator.version}</bundle>
+        <bundle>mvn:com.brodos.alg/AddressLabelGenerator-application/${project.version}</bundle>        
+    </feature>
+
+    <feature name="AddressLabelGenerator-service" description="Service layer" version="${project.version}">
+        <details>feature for ISAAC service layer</details>
+        <feature>AddressLabelGenerator-infrastructure</feature>
+        <feature version="${transaction.version}">transaction</feature>
+        <feature>activemq-camel</feature>
+        <feature>camel-quartz2</feature>
+        <bundle dependency="true">mvn:net.engio/mbassador/${mbassador.version}</bundle>
+        <bundle>mvn:com.brodos.example.jmstest/jmsSimulator-events/1.0-SNAPSHOT</bundle>
+        <bundle>mvn:com.brodos.alg/AddressLabelGenerator-service/${project.version}</bundle>
+    </feature>
+
+    <feature name="AddressLabelGenerator-infrastructure" description="Infrastructure layer" version="${project.version}">
+        <feature>AddressLabelGenerator-core</feature>
+        <feature>pax-jdbc</feature>
+        <feature>pax-jdbc-h2</feature>
+        <feature>pax-jdbc-mariadb</feature>
+        <feature>pax-jdbc-spec</feature>
+        <feature>pax-jdbc-config</feature>
+        <feature>pax-jdbc-pool-aries</feature>
+        <feature>pax-jdbc-pool-dbcp2</feature>
+        <feature>jndi</feature>
+        <feature>jdbc</feature>
+        <feature>transaction</feature>
+        <feature>commons-jpa-feature</feature>
+        <feature>commons-liquibase</feature>
+        <feature version="2.6.1">jpa</feature>
+        <feature version="${hibernate.version}">hibernate-orm</feature>
+        <bundle>mvn:com.brodos.alg/AddressLabelGenerator-infrastructure/${project.version}</bundle>
+    </feature>
+
+    <feature name="AddressLabelGenerator-core" description="Domain layer" version="${project.version}">      
+        <bundle dependency="true">mvn:com.google.guava/guava/20.0</bundle>          
+        <feature prerequisite="true">commons-hystrix-feature</feature>
+        <bundle>wrap:mvn:com.itextpdf/kernel/${itext.version}</bundle>
+        <bundle>wrap:mvn:com.itextpdf/layout/${itext.version}</bundle>
+        <bundle>wrap:mvn:com.itextpdf/barcodes/${itext.version}</bundle>
+        <bundle>wrap:mvn:com.itextpdf/io/${itext.version}</bundle>
+        <bundle>wrap:mvn:commons-io/commons-io/${commons-io.version}</bundle>
+        
+        <bundle>wrap:mvn:org.apache.pdfbox/pdfbox/2.0.9</bundle>
+        <bundle>wrap:mvn:org.apache.pdfbox/pdfbox-tools/2.0.9</bundle>
+        <bundle>wrap:mvn:org.apache.pdfbox/fontbox/2.0.9</bundle>
+        
+        <bundle>wrap:mvn:com.google.zxing/core/3.3.3</bundle>
+        <bundle>wrap:mvn:net.sf.barcode4j/barcode4j/2.1</bundle>
+        <bundle>wrap:mvn:avalon-framework/avalon-framework-impl/4.2.0</bundle>
+        <bundle>wrap:mvn:commons-cli/commons-cli/1.0</bundle>
+        <bundle>wrap:mvn:commons-lang/commons-lang/1.0</bundle>
+        <bundle>wrap:mvn:org.apache.ant/ant/1.7.1</bundle>
+        <bundle>wrap:mvn:org.apache.ant/ant-launcher/1.7.1</bundle>
+        
+        <bundle>wrap:mvn:org.apache.xmlgraphics/batik-all/1.10</bundle>
+        
+        <bundle dependency="true">mvn:javax.validation/validation-api/1.1.0.Final</bundle>
+        <bundle dependency="true">mvn:org.eclipse.persistence/javax.persistence/2.1.0</bundle>
+        <bundle>mvn:com.brodos.alg/AddressLabelGenerator-core/${project.version}</bundle>                       
+    </feature>
+                        
+    <feature name="AddressLabelGenerator-dhl" description="DHL Label Generator layer" version="${project.version}">                        
+        <!--Install unirest-->
+        <bundle>wrap:mvn:org.json/json/20180813</bundle>
+        <bundle>wrap:mvn:org.apache.httpcomponents/httpmime/4.3.6</bundle>
+        <bundle>wrap:mvn:org.apache.httpcomponents/httpasyncclient/4.0.2</bundle>
+        <bundle>wrap:mvn:org.apache.httpcomponents/httpclient/4.3.6</bundle>
+        <bundle>wrap:mvn:org.apache.httpcomponents/httpcore/4.3.3</bundle>
+        <bundle>wrap:mvn:org.apache.httpcomponents/httpcore-nio/4.3.3</bundle>
+        <bundle>wrap:mvn:com.mashape.unirest/unirest-java/${unirest.version}</bundle>        
+        
+        <bundle>mvn:com.brodos.alg/AddressLabelGenerator-dhl/${project.version}</bundle>        
+    </feature>     
+    
+    <feature name="AddressLabelGenerator-tof" description="TOF Label Generator layer" version="${project.version}">     
+        <bundle>mvn:com.brodos.alg/AddressLabelGenerator-tof/${project.version}</bundle>        
+    </feature>    
+</features>

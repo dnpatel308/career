@@ -1,0 +1,5 @@
+Import-Package: javax.annotation;version=1.2, \
+  org.apache.activemq.pool
+DynamicImport-Package: *
+-removeheaders Import-Service, Export-Service, Require-Capability
+-dsannotations: *

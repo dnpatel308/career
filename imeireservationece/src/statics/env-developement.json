@@ -1,0 +1,6 @@
+{
+    "STOCKAPI": "http://stockdevvm.brodos.net/wms/v1",
+    "BNETURL": "http://erp.brodos.net:8080/index.php/mpath/svoucher_imeimanagement",
+    "OTPAPI": "http://erp.brodos.net:8080/index.php/brocloak/consumeotp",
+    "REFRESHAPI": "http://erp.brodos.net:8080/index.php/brocloak/refreshtoken"
+}

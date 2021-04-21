@@ -1,0 +1,6 @@
+{
+    "STOCKAPI": "https://stockstaging.brodos.net/wms/v1",
+    "BNETURL": "https://staging-trunk.brodos.net/index.php/mpath/svoucher_imeimanagement",
+    "OTPAPI": "https://staging-trunk.brodos.net/index.php/brocloak/consumeotp",
+    "REFRESHAPI": "https://staging-trunk.brodos.net/index.php/brocloak/refreshtoken"
+}

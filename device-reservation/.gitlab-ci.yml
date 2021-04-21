@@ -1,0 +1,472 @@
+stages:
+  - build
+  - packaging
+  - test
+  - publish
+  - deploy
+  - apitests
+  - populate
+
+image: maven:3.5.3-jdk-8
+
+
+variables:
+  MAVEN_CLI_OPTS: "--batch-mode -s .m2/settings.xml"
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+  IMAGE_NAME: gitlab-registry.brodos.net/wms/device-reservation:${CI_COMMIT_REF_NAME}-${CI_PIPELINE_ID}
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - .m2/repository/
+
+sonarqube_master_job:
+  stage: test
+  script:
+    - mvn sonar:sonar -Dsonar.host.url=$SONAR_URL -Dsonar.login=$SONAR_LOGIN -Dsonar.gitlab.project_id=$CI_PROJECT_PATH -Dsonar.gitlab.commit_sha=$CI_COMMIT_SHA -Dsonar.gitlab.ref_name=$CI_COMMIT_REF_NAME ${MAVEN_CLI_OPTS} -f ./pom.xml    
+
+build:
+  stage: build  
+  script:    
+    - mvn $MAVEN_CLI_OPTS clean install -D skipTests -f ./pom.xml  
+    - mvn $MAVEN_CLI_OPTS  clean install -f device-reservation-testing/pom.xml
+  artifacts:
+    paths:
+     - ./target/*.jar     
+     - ./target/classes/application.properties
+     - ./target/classes/brodos.mail.properties
+     - ./target/classes/brodos.ticket.properties
+     - ./target/classes/device.context.properties
+     - ./log4j2.properties
+     - ./device-reservation-testing     
+
+docker-build:
+  stage: packaging
+  image: docker:18
+  services:
+    - docker:18-dind
+  script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN gitlab-registry.brodos.net
+    - docker build -t ${IMAGE_NAME} -f build/docker/Dockerfile .
+    - docker push ${IMAGE_NAME}  
+    
+container_scan:
+  stage: test
+  image:
+    name: anchore/anchore-engine:v0.3.0
+    entrypoint: [""]
+  services:
+    - name: anchore/engine-db-preload:v0.3.0
+      alias: anchore-db
+
+  variables:
+    GIT_STRATEGY: none
+    ANCHORE_FAIL_ON_POLICY: "false"
+    ANCHORE_TIMEOUT: 500
+
+  script:
+    - |
+       chmod +x /tmp/anchore_ci_tools.py
+        ln -s /tmp/anchore_ci_tools.py /usr/local/bin/anchore_ci_tools
+    - anchore_ci_tools --setup
+    - anchore-cli --u admin --p foobar registry add $CI_REGISTRY gitlab-ci-token $CI_JOB_TOKEN --skip-validate
+    - anchore_ci_tools --analyze --report --image ${IMAGE_NAME} --timeout ${ANCHORE_TIMEOUT}
+    - |
+        if [ "$ANCHORE_FAIL_ON_POLICY" == "true" ]; then
+          anchore-cli evaluate check ${IMAGE_NAME}
+        else
+          set +o pipefail
+          anchore-cli evaluate check ${IMAGE_NAME} | tee /dev/null
+        fi
+
+  artifacts:
+    name: ${CI_JOB_NAME}-${CI_COMMIT_REF_NAME}
+    paths:
+    - anchore-reports/*
+  allow_failure: true  
+
+anchore_reports:
+  stage: publish
+  image: alpine:latest
+  dependencies:
+    - container_scan
+  variables:
+    GIT_STRATEGY: none
+
+  script:
+    - apk add jq
+    - |
+        echo "Parsing anchore reports."
+        printf "\n%s\n" "The following OS packages are installed on ${IMAGE_NAME}:"
+        jq '[.content | sort_by(.package) | .[] | {package: .package, version: .version}]' anchore-reports/image-content-os-report.json || true
+        printf "\n%s\n" "The following vulnerabilites were found on ${IMAGE_NAME}:"
+        jq '[.vulnerabilities | group_by(.package) | .[] | {package: .[0].package, vuln: [.[].vuln]}]' anchore-reports/image-vuln-report.json || true
+  allow_failure: true      
+
+deploy_de-bai1-staging:
+  image: gitlab-registry.brodos.net/mesosphere/dcos-cli:latest  
+  stage: deploy
+  only:
+    - /^Branch_.[0-9]*.[0-9]$/
+  script:
+    - dcos cluster attach de-bai1
+    - |
+        dcos marathon app update stock-staging/device-reservation << EOF
+        {
+              "env": {
+                "SPRING_DATASOURCE_URL": "${SPRING_DATASOURCE_URL}",
+                "SPRING_DATASOURCE_USERNAME": "${SPRING_DATASOURCE_USERNAME}",
+                "SPRING_DATASOURCE_PASSWORD": "${SPRING_DATASOURCE_PASSWORD}",
+                "DEVICE_RESERVATION_HTTP_AUTH_TOKEN_HEADER_NAME": "${DEVICE_RESERVATION_HTTP_AUTH_TOKEN_HEADER_NAME}",
+                "DEVICE_RESERVATION_HTTP_AUTH_TOKEN": "${DEVICE_RESERVATION_HTTP_AUTH_TOKEN}",
+                "SPRING_ACTIVEMQ_USER": "${SPRING_ACTIVEMQ_USER}",
+                "SPRING_ACTIVEMQ_PASSWORD": "${SPRING_ACTIVEMQ_PASSWORD}",
+                "SPRING_ACTIVEMQ_BROKER_URL": "${SPRING_ACTIVEMQ_BROKER_URL}",
+                "EMAILAPIURL": "${EMAILAPIURL}",
+                "ENVIRONMENT": "${EMAIL_ENVIRONMENT}",
+                "CREATETICKETURL": "${CREATETICKETURL}",
+                "CHANGETICKETURL": "${CHANGETICKETURL}",
+                "ENVIRONMENT": "${TICKET_ENVIRONMENT}",
+                "DEVICECONTEXTAPIURL": "${DEVICECONTEXTAPIURL}",
+                "VOUCHER_IMPORT_CONSUMER_QUEUENAME": "${VOUCHER_IMPORT_CONSUMER_QUEUENAME}",
+                "VOUCHER_IMPORT_CONSUMER_TRANSACTED": "${VOUCHER_IMPORT_CONSUMER_TRANSACTED}",
+                "VOUCHER_IMPORT_CONSUMER_TOPICNAME": "${VOUCHER_IMPORT_CONSUMER_TOPICNAME}",
+                "VOUCHER_IMPORT_CONSUMER_CLIENTID": "${VOUCHER_IMPORT_CONSUMER_CLIENTID}",
+                "VOUCHER_IMPORT_CONSUMER_PROCESSORNAME": "${VOUCHER_IMPORT_CONSUMER_PROCESSORNAME}",
+                "TICKET_RESERVATION_SUBJECT": "${TICKET_RESERVATION_SUBJECT}",
+                "TICKET_OPENCASE_SUBJECT": "${TICKET_OPENCASE_SUBJECT}",
+                "TICKET_USERNAME": "${TICKET_USERNAME}",
+                "TICKET_PASSWORD": "${TICKET_PASSWORD}",
+                "TICKET_IMEI_IMPORT_CHANGE_COMMENT": "${TICKET_IMEI_IMPORT_CHANGE_COMMENT}",
+                "TICKET_IMEI_CANCEL_COMMENT": "${TICKET_IMEI_CANCEL_COMMENT}",
+                "TICKET_OPENCASE_CANCEL_COMMENT": "${TICKET_OPENCASE_CANCEL_COMMENT}",
+                "TICKET_IMEI_SENTOUT_COMMENT": "${TICKET_IMEI_SENTOUT_COMMENT}",
+                "HOST": "${HOST}",
+                "PORT": "${PORT}",
+                "TIMEOUT": "${TIMEOUT}",
+                "VOUCHERMODULEID": "${VOUCHERMODULEID}",
+                "BRODOS_VOUCHER_SOCKET_USERNAME": "${BRODOS_VOUCHER_SOCKET_USERNAME}",
+                "BRODOS_VOUCHER_SOCKET_PASSWORD": "${BRODOS_VOUCHER_SOCKET_PASSWORD}",                
+                "AUTHHEADERKEY": "${AUTHHEADERKEY}",
+                "AUTHHEADERVALUE": "${AUTHHEADERVALUE}",
+                "RESERVATION_FROM": "${RESERVATION_FROM}",
+                "REQUESTFORSENTOUT_SALESPERSONNEL_EMAIL_ADDRESS": "${REQUESTFORSENTOUT_SALESPERSONNEL_EMAIL_ADDRESS}",
+                "REQUESTFORSENTOUT_SALESPERSONNEL_EMAIL_SUBJECT_SUCCESS": "${REQUESTFORSENTOUT_SALESPERSONNEL_EMAIL_SUBJECT_SUCCESS}",
+                "REQUESTFORSENTOUT_SALESPERSONNEL_EMAIL_SUBJECT_FAILURE": "${REQUESTFORSENTOUT_SALESPERSONNEL_EMAIL_SUBJECT_FAILURE}",
+                "REQUESTFORSENTOUT_SALESPERSONNEL_EMAIL_SUBJECT_FAILURE_MISSING_CUSTOMERNUMBER": "${REQUESTFORSENTOUT_SALESPERSONNEL_EMAIL_SUBJECT_FAILURE_MISSING_CUSTOMERNUMBER}",              
+                "RESERVATIONMAIL_THEME": "${RESERVATIONMAIL_THEME}",
+                "RESERVATIONMAIL_LANGUAGE": "${RESERVATIONMAIL_LANGUAGE}",
+                "RESERVATIONMAIL_USERNAME": "${RESERVATIONMAIL_USERNAME}",
+                "RESERVATIONMAIL_PASSWORD": "${RESERVATIONMAIL_PASSWORD}",
+                "TICKET_ISPUBLIC": "${TICKET_ISPUBLIC}",
+                "TICKET_RESERVATION_RESPONSIBILITY": "${TICKET_RESERVATION_RESPONSIBILITY}",
+                "TICKET_RESERVATION_RESPONSIBILITY": "${TICKET_RESERVATION_RESPONSIBILITY}",
+                "TICKET_SENDMAIL": "${TICKET_SENDMAIL}",
+                "TICKET_OPENSTATUS": "${TICKET_OPENSTATUS}",
+                "TICKET_SENDMAIL_WAREHOUSE": "${TICKET_SENDMAIL_WAREHOUSE}",
+                "TICKET_CLOSEDSTATUS": "${TICKET_CLOSEDSTATUS}",
+                "ARTICLEAPI_URL": "${ARTICLEAPI_URL}",
+                "DEVICE_RESERVATION_PRODUCER_TOPICNAMES": "${DEVICE_RESERVATION_PRODUCER_TOPICNAMES}",
+                "DEVICE_RESERVATION_CONSUMER_QUEUENAME": "${DEVICE_RESERVATION_CONSUMER_QUEUENAME}",
+                "DEVICE_RESERVATION_CONSUMER_TRANSACTED": "${DEVICE_RESERVATION_CONSUMER_TRANSACTED}",
+                "DEVICE_RESERVATION_CONSUMER_TOPICNAME": "${DEVICE_RESERVATION_CONSUMER_TOPICNAME}",
+                "DEVICE_RESERVATION_CONSUMER_PROCESSORNAME": "${DEVICE_RESERVATION_CONSUMER_PROCESSORNAME}",                
+                "DOMAIN_EVENTS_PUBLISHER_INTERVAL": "${DOMAIN_EVENTS_PUBLISHER_INTERVAL}",
+                "TICKET_MAXRETRIAL_COUNT": "${TICKET_MAXRETRIAL_COUNT}",
+                "JMS_MAX_REDELIVERY_POLICY": "${JMS_MAX_REDELIVERY_POLICY}",
+                "FAILED_DOMAIN_EVENTS_HANDLER_INTERVAL": "${FAILED_DOMAIN_EVENTS_HANDLER_INTERVAL}",
+                "FAILED_EVENTS_OLDER_THAN_SECONDS": "${FAILED_EVENTS_OLDER_THAN_SECONDS}"
+              },
+              "labels": {
+                "BRODOS-COSTUNIT": "144130",                
+                "BRODOS-TEAM": "Stock Team",
+                "BRODOS-VCS": "https://gitlab.brodos.net/wms/device-reservation",
+                "BRODOS-PROJECTNO": "PROJEKTNO-4"    
+              },
+              "id": "/stock-staging/device-reservation",
+              "backoffFactor": 1.15,
+              "backoffSeconds": 1,
+              "container": {
+              "portMappings": [
+              {
+                "containerPort": 8080,
+                "hostPort": 0,
+                "labels": {
+                  "VIP_0": "/stock-staging/device-reservation:8080"
+              },
+                "protocol": "tcp",                
+                "name": "devicereservations"
+              }
+              ],
+                "type": "DOCKER",
+                "volumes": [],
+                "docker": {
+                  "image": "${IMAGE_NAME}",
+                  "forcePullImage": true,
+                  "privileged": true,
+                  "parameters": [
+                  {
+                    "key": "log-opt",
+                    "value": "gelf-address=udp://de-bai1-gelf:12201"
+                  },
+                  {
+                    "key": "log-opt",
+                    "value": "tag=device-reservation-staging"
+                  },
+                  {
+                    "key": "log-driver",
+                    "value": "gelf"
+                  }        
+                ]
+                }
+              },
+              "cpus": 1,
+              "disk": 0,
+              "fetch": [
+                {
+                  "uri": "file:///etc/docker.tar.gz",
+                  "extract": true,
+                  "executable": false,
+                  "cache": false
+                }
+              ],
+              "healthChecks": [
+                {
+                  "gracePeriodSeconds": 300,
+                  "intervalSeconds": 60,
+                  "maxConsecutiveFailures": 3,
+                  "timeoutSeconds": 20,
+                  "delaySeconds": 15,
+                  "protocol": "COMMAND",
+                  "command": {
+                    "value": "curl -f http://localhost:8080/erp-context/health"
+                  }
+                }
+              ],
+              "instances": 1,
+              "maxLaunchDelaySeconds": 300,
+              "mem": 768,
+              "gpus": 0,
+              "networks": [
+                {
+                  "mode": "container/bridge"
+                }
+              ],
+              "requirePorts": false,
+              "upgradeStrategy": {
+                "maximumOverCapacity": 1,
+                "minimumHealthCapacity": 1
+              },
+              "killSelection": "YOUNGEST_FIRST",
+              "unreachableStrategy": {
+                "inactiveAfterSeconds": 0,
+                "expungeAfterSeconds": 0
+              },
+              "constraints": []
+        }
+        EOF    
+    - sleep 180   
+  environment:
+    name: de-bai1-staging
+    url: https://devicereservations-staging.brodos.net  
+  when: manual
+  allow_failure: false
+
+deploy_de-bai1-production:
+  image: gitlab-registry.brodos.net/mesosphere/dcos-cli:latest
+  stage: deploy
+  only:    
+    - /^[0-9]*.[0-9]*.[0-9]+$/
+  script:
+    - dcos cluster attach de-otc-eu-lt-1
+    - |
+        dcos marathon app update stock-projects/device-reservations/ << EOF
+        {
+              "env": {
+                "SPRING_DATASOURCE_URL": "${SPRING_DATASOURCE_URL}",
+                "SPRING_DATASOURCE_USERNAME": "${SPRING_DATASOURCE_USERNAME}",
+                "SPRING_DATASOURCE_PASSWORD": "${SPRING_DATASOURCE_PASSWORD}",
+                "DEVICE_RESERVATION_HTTP_AUTH_TOKEN_HEADER_NAME": "${DEVICE_RESERVATION_HTTP_AUTH_TOKEN_HEADER_NAME}",
+                "DEVICE_RESERVATION_HTTP_AUTH_TOKEN": "${DEVICE_RESERVATION_HTTP_AUTH_TOKEN}",
+                "SPRING_ACTIVEMQ_USER": "${SPRING_ACTIVEMQ_USER}",
+                "SPRING_ACTIVEMQ_PASSWORD": "${SPRING_ACTIVEMQ_PASSWORD}",
+                "SPRING_ACTIVEMQ_BROKER_URL": "${SPRING_ACTIVEMQ_BROKER_URL}",
+                "EMAILAPIURL": "${EMAILAPIURL}",
+                "ENVIRONMENT": "${EMAIL_ENVIRONMENT}",
+                "CREATETICKETURL": "${CREATETICKETURL}",
+                "CHANGETICKETURL": "${CHANGETICKETURL}",
+                "ENVIRONMENT": "${TICKET_ENVIRONMENT}",
+                "DEVICECONTEXTAPIURL": "${DEVICECONTEXTAPIURL}",
+                "DEVICE_RESERVATION_CONSUMER_TOPICNAME": "${DEVICE_RESERVATION_CONSUMER_TOPICNAME}",
+                "JMS_MAX_REDELIVERY_POLICY": "${JMS_MAX_REDELIVERY_POLICY}",
+                "DEVICE_RESERVATION_PRODUCER_TOPICNAMES": "${DEVICE_RESERVATION_PRODUCER_TOPICNAMES}",
+                "DEVICE_RESERVATION_CONSUMER_QUEUENAME": "${DEVICE_RESERVATION_CONSUMER_QUEUENAME}",
+                "DEVICE_RESERVATION_CONSUMER_TRANSACTED": "${DEVICE_RESERVATION_CONSUMER_TRANSACTED}",
+                "DEVICE_RESERVATION_CONSUMER_PROCESSORNAME": "${DEVICE_RESERVATION_CONSUMER_PROCESSORNAME}",
+                "TICKET_RESERVATION_SUBJECT": "${TICKET_RESERVATION_SUBJECT}",
+                "TICKET_OPENCASE_SUBJECT": "${TICKET_OPENCASE_SUBJECT}",
+                "TICKET_USERNAME": "${TICKET_USERNAME}",
+                "TICKET_PASSWORD": "${TICKET_PASSWORD}",
+                "TICKET_IMEI_IMPORT_CHANGE_COMMENT": "${TICKET_IMEI_IMPORT_CHANGE_COMMENT}",
+                "TICKET_IMEI_CANCEL_COMMENT": "${TICKET_IMEI_CANCEL_COMMENT}",
+                "TICKET_OPENCASE_CANCEL_COMMENT": "${TICKET_OPENCASE_CANCEL_COMMENT}",
+                "TICKET_IMEI_SENTOUT_COMMENT": "${TICKET_IMEI_SENTOUT_COMMENT}",
+                "HOST": "${HOST}",
+                "PORT": "${PORT}",
+                "TIMEOUT": "${TIMEOUT}",
+                "VOUCHERMODULEID": "${VOUCHERMODULEID}",
+                "BRODOS_VOUCHER_SOCKET_USERNAME": "${BRODOS_VOUCHER_SOCKET_USERNAME}",
+                "BRODOS_VOUCHER_SOCKET_PASSWORD": "${BRODOS_VOUCHER_SOCKET_PASSWORD}",                
+                "AUTHHEADERKEY": "${AUTHHEADERKEY}",
+                "AUTHHEADERVALUE": "${AUTHHEADERVALUE}",
+                "RESERVATION_FROM": "${RESERVATION_FROM}",
+                "REQUESTFORSENTOUT_SALESPERSONNEL_EMAIL_ADDRESS": "${REQUESTFORSENTOUT_SALESPERSONNEL_EMAIL_ADDRESS}",
+                "REQUESTFORSENTOUT_SALESPERSONNEL_EMAIL_SUBJECT_SUCCESS": "${REQUESTFORSENTOUT_SALESPERSONNEL_EMAIL_SUBJECT_SUCCESS}",
+                "REQUESTFORSENTOUT_SALESPERSONNEL_EMAIL_SUBJECT_FAILURE": "${REQUESTFORSENTOUT_SALESPERSONNEL_EMAIL_SUBJECT_FAILURE}",
+                "REQUESTFORSENTOUT_SALESPERSONNEL_EMAIL_SUBJECT_FAILURE_MISSING_CUSTOMERNUMBER": "${REQUESTFORSENTOUT_SALESPERSONNEL_EMAIL_SUBJECT_FAILURE_MISSING_CUSTOMERNUMBER}",              
+                "RESERVATIONMAIL_THEME": "${RESERVATIONMAIL_THEME}",
+                "RESERVATIONMAIL_LANGUAGE": "${RESERVATIONMAIL_LANGUAGE}",
+                "RESERVATIONMAIL_USERNAME": "${RESERVATIONMAIL_USERNAME}",
+                "RESERVATIONMAIL_PASSWORD": "${RESERVATIONMAIL_PASSWORD}",
+                "TICKET_ISPUBLIC": "${TICKET_ISPUBLIC}",
+                "TICKET_RESERVATION_RESPONSIBILITY": "${TICKET_RESERVATION_RESPONSIBILITY}",
+                "TICKET_RESERVATION_RESPONSIBILITY": "${TICKET_RESERVATION_RESPONSIBILITY}",
+                "TICKET_SENDMAIL": "${TICKET_SENDMAIL}",
+                "TICKET_OPENSTATUS": "${TICKET_OPENSTATUS}",
+                "TICKET_SENDMAIL_WAREHOUSE": "${TICKET_SENDMAIL_WAREHOUSE}",
+                "TICKET_CLOSEDSTATUS": "${TICKET_CLOSEDSTATUS}",
+                "ARTICLEAPI_URL": "${ARTICLEAPI_URL}",
+                "VOUCHER_IMPORT_CONSUMER_TOPICNAME": "${VOUCHER_IMPORT_CONSUMER_TOPICNAME}",
+                "VOUCHER_IMPORT_CONSUMER_QUEUENAME": "${VOUCHER_IMPORT_CONSUMER_QUEUENAME}",
+                "VOUCHER_IMPORT_CONSUMER_TRANSACTED": "${VOUCHER_IMPORT_CONSUMER_TRANSACTED}",
+                "VOUCHER_IMPORT_CONSUMER_CLIENTID": "${VOUCHER_IMPORT_CONSUMER_CLIENTID}",
+                "VOUCHER_IMPORT_CONSUMER_PROCESSORNAME": "${VOUCHER_IMPORT_CONSUMER_PROCESSORNAME}",
+                "DOMAIN_EVENTS_PUBLISHER_INTERVAL": "${DOMAIN_EVENTS_PUBLISHER_INTERVAL}",
+                "TICKET_MAXRETRIAL_COUNT": "${TICKET_MAXRETRIAL_COUNT}",
+                "FAILED_DOMAIN_EVENTS_HANDLER_INTERVAL": "${FAILED_DOMAIN_EVENTS_HANDLER_INTERVAL}",
+                "FAILED_EVENTS_OLDER_THAN_SECONDS": "${FAILED_EVENTS_OLDER_THAN_SECONDS}"
+              },
+              "labels": {
+                "BRODOS-COSTUNIT": "144130",                
+                "BRODOS-TEAM": "Stock Team",
+                "BRODOS-VCS": "https://gitlab.brodos.net/wms/device-reservation",
+                "BRODOS-PROJECTNO": "PROJEKTNO-4"    
+              },
+              "id": "/stock-projects/device-reservations",
+              "backoffFactor": 1.15,
+              "backoffSeconds": 1,
+              "container": {
+              "portMappings": [
+              {
+                "containerPort": 8080,
+                "hostPort": 0,
+                "labels": {
+                  "VIP_0": "/stock-projects/device-reservations:8080"
+              },
+                "protocol": "tcp",                
+                "name": "devicereservations"
+              }
+              ],
+                "type": "DOCKER",
+                "volumes": [],
+                "docker": {
+                  "image": "${IMAGE_NAME}",
+                  "forcePullImage": true,
+                  "privileged": true,
+                  "parameters": [
+                  {
+                    "key": "log-opt",
+                    "value": "gelf-address=udp://de-bai1-gelf:12201"
+                  },
+                  {
+                    "key": "log-opt",
+                    "value": "tag=device-reservation-production"
+                  },
+                  {
+                    "key": "log-driver",
+                    "value": "gelf"
+                  }        
+                ]
+                }
+              },
+              "cpus": 1,
+              "disk": 0,
+              "fetch": [
+                {
+                  "uri": "file:///etc/docker.tar.gz",
+                  "extract": true,
+                  "executable": false,
+                  "cache": false
+                }
+              ],
+              "healthChecks": [
+                {
+                  "gracePeriodSeconds": 300,
+                  "intervalSeconds": 60,
+                  "maxConsecutiveFailures": 3,
+                  "timeoutSeconds": 20,
+                  "delaySeconds": 15,
+                  "protocol": "COMMAND",
+                  "command": {
+                    "value": "curl -f http://localhost:8080/erp-context/health"
+                  }
+                }
+              ],
+              "instances": 1,
+              "maxLaunchDelaySeconds": 300,
+              "mem": 768,
+              "gpus": 0,
+              "networks": [
+                {
+                  "mode": "container/bridge"
+                }
+              ],
+              "requirePorts": false,
+              "upgradeStrategy": {
+                "maximumOverCapacity": 1,
+                "minimumHealthCapacity": 1
+              },
+              "killSelection": "YOUNGEST_FIRST",
+              "unreachableStrategy": {
+                "inactiveAfterSeconds": 0,
+                "expungeAfterSeconds": 0
+              },
+              "constraints": []
+        }
+        EOF    
+  environment:
+    name: de-bai1-production
+    url: https://devicereservations.brodos.net
+  when: manual  
+
+
+restassure-test:
+  stage: apitests  
+  only:
+    - /^Branch_.[0-9]*.[0-9]$/
+  script:        
+    - cd device-reservation-testing    
+    - export BASE_URL=${BASE_URL_STAGING}
+    - export API_KEY_HEADER=${API_KEY_HEADER_STAGING}
+    - java -jar device-reservation-testing-*.jar
+  artifacts:
+   paths:
+    - ./device-reservation-testing
+  when: on_success
+
+pages:
+  stage: populate  
+  only:
+    - /^Branch_.[0-9]*.[0-9]$/
+  script:            
+    - ls -ltr ./device-reservation-testing/test-report/*
+    - mkdir -p ./public
+    - cp -r ./device-reservation-testing/test-output/* ./public/
+    - cp -r ./device-reservation-testing/test-report/* ./public/.
+  artifacts:
+   paths:
+    - public
+  when: on_success
+
+
+    

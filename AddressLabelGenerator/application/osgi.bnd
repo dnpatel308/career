@@ -1,0 +1,6 @@
+Export-Package:
+Import-Package: \
+    org.hibernate.validator, \
+    *
+-removeheaders Import-Service, Export-Service, Require-Capability
+-dsannotations: *

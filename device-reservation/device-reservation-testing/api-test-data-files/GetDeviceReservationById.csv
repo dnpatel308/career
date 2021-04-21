@@ -1,0 +1,2 @@
+"TestSuite";"TestCase";"Active";"URLParameters";"Body";"StatusCode";"AssertionMethod";"AssertionArgs";"TestLinkSettings"
+"GetDeviceReservationById API File";"GetDeviceReservationByIdNotFound";"TRUE";03054568645422153;;404;"assertEquals(java.lang.Object,java.lang.Object)";"Device reservation not found.@.message";
